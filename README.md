@@ -1,4 +1,4 @@
-**Welcome to Awesome Database Modelling & Design Repository!**
+## Welcome to Awesome Database Modelling & Design Repository!
 
 This repository is your ultimate destination for mastering the art of database modelling and design across various systems. Whether you're a seasoned professional or just starting out, here you'll find a treasure trove of resources, SQL queries, and code snippets to elevate your skills and create robust, efficient databases.
 
