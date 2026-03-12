@@ -12,10 +12,10 @@ A curated collection of practical database modelling references, schema patterns
 - [Core modelling topics](#core-modelling-topics)
 - [Real-world schema case studies](#real-world-schema-case-studies)
 - [Design checklist](#design-checklist)
-- [50+ database modelling problems (practice catalog)](./database-modelling-problem-catalog/README.md)
 - [Contributing](#contributing)
 
----
+- [WordPress Content Management System](./wp-content-management-system/README.md)
+- [Music Streaming Service Modelling](./music-streaming-server/README.md)
 
 ## How to use this repo
 
@@ -24,7 +24,6 @@ A curated collection of practical database modelling references, schema patterns
 3. Compare normalized source-of-truth tables vs denormalized read models.
 4. Adapt table definitions based on your scale, consistency, and compliance requirements.
 
----
 
 ## Core modelling topics
 
@@ -63,11 +62,6 @@ A curated collection of practical database modelling references, schema patterns
 - [Messaging / Chat Application Modelling](./messaging-chat-database-modelling/README.md)
 - [Ride Sharing (Uber/Ola style) Modelling](./ride-sharing-database-modelling/README.md)
 - [Ledger-first Wallet / FinTech Modelling](./wallet-ledger-database-modelling/README.md)
-
-
-### Practice sets
-
-- [50+ Database Modelling Problems Catalog](./database-modelling-problem-catalog/README.md)
 
 ---
 
