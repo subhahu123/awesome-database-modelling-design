@@ -1,263 +1,110 @@
 # Awesome Database Modelling & Design
 
-## Welcome to Awesome Database Modelling & Design 🚀
+A curated collection of practical database modelling references, schema patterns, and production-inspired examples.
 
-Welcome to **Awesome Database Modelling & Design**, a curated collection of resources, best practices, tools, and examples to help developers and architects design **scalable, efficient, and maintainable databases**.
-
-Database design is the foundation of every reliable system. Whether you are building a **startup MVP, SaaS platform, or enterprise architecture**, understanding how to properly model data is critical.
-
-This repository aims to become a **go-to reference for database design patterns, modeling techniques, and schema best practices.**
+> Inspired by awesome-style repositories (including `awesome-low-level-design`), this repo focuses on **real schema decisions** with trade-offs.
 
 ---
 
-# Why This Repository Exists
+## Contents
 
-Poor database design leads to:
-
-* Slow queries ⚠️
-* Data inconsistencies ⚠️
-* Difficult migrations ⚠️
-* Scaling problems ⚠️
-
-A well-designed schema results in:
-
-* Fast and efficient queries ⚡
-* Clean relationships between entities
-* Easy scalability and maintenance
-* Predictable data behavior
-
-This repository helps developers **learn the principles and practical techniques behind good database design.**
+- [How to use this repo](#how-to-use-this-repo)
+- [Core modelling topics](#core-modelling-topics)
+- [Real-world schema case studies](#real-world-schema-case-studies)
+- [Design checklist](#design-checklist)
+- [50+ database modelling problems (practice catalog)](./database-modelling-problem-catalog/README.md)
+- [Contributing](#contributing)
 
 ---
 
-# What You Will Find Here
+## How to use this repo
 
-This repository contains curated material covering **the full lifecycle of database modeling and design.**
-
-### Database Design Fundamentals
-
-* Entity Relationship (ER) Modeling
-* Conceptual, Logical, and Physical Models
-* Primary Keys and Foreign Keys
-* Relationships (1-1, 1-N, N-N)
-
-### Schema Design Best Practices
-
-* Naming conventions
-* Index design
-* Constraint usage
-* Data integrity strategies
-* Schema versioning
-
-### Normalization Techniques
-
-* First Normal Form (1NF)
-* Second Normal Form (2NF)
-* Third Normal Form (3NF)
-* Boyce–Codd Normal Form (BCNF)
-* When to denormalize for performance
-
-### Performance Optimization
-
-* Query optimization
-* Index strategies
-* Partitioning techniques
-* Query anti-patterns
-
-### Advanced Database Concepts
-
-* Distributed databases
-* Event-driven data models
-* Multi-tenant schemas
-* Temporal databases
-* Data warehousing patterns
+1. Start with a case study close to your domain (payments, messaging, booking, CMS, etc.).
+2. Understand entities, constraints, and indexing strategy.
+3. Compare normalized source-of-truth tables vs denormalized read models.
+4. Adapt table definitions based on your scale, consistency, and compliance requirements.
 
 ---
 
-# Supported Database Systems
+## Core modelling topics
 
-This repository includes examples and resources for multiple database technologies:
-
-* MySQL
-* PostgreSQL
-* MongoDB
-* Cassandra
-* Redis
-* DynamoDB
-* SQL Server
-* Oracle
-
-Each database has different strengths, and the repository highlights **design patterns suited for each system.**
+- **Entity modelling:** identifying aggregate boundaries, strong/weak entities.
+- **Relational correctness:** PK/FK strategy, uniqueness, check constraints, cascades.
+- **Performance patterns:** composite indexes, partial indexes, partitioning, read models.
+- **Operational concerns:** migrations, backfills, auditability, soft delete, retention.
+- **Scale trade-offs:** sharding keys, eventual consistency, idempotency, outbox/event logs.
 
 ---
 
-# Repository Structure
+## Real-world schema case studies
 
-```
-awesome-database-modelling-design
-│
-├── fundamentals/
-│   ├── er-modeling
-│   ├── normalization
-│   └── relational-concepts
-│
-├── schema-design/
-│   ├── naming-conventions
-│   ├── indexing-strategies
-│   └── constraints
-│
-├── database-patterns/
-│   ├── multi-tenant-design
-│   ├── audit-logs
-│   ├── soft-delete
-│   └── event-sourcing
-│
-├── sql-examples/
-│   ├── queries
-│   ├── joins
-│   ├── performance
-│   └── optimization
-│
-├── tools/
-│   ├── er-diagram-tools
-│   ├── schema-generators
-│   └── visualization-tools
-│
-└── resources/
-    ├── books
-    ├── blogs
-    └── courses
-```
+### Social / Community
+
+- [Reddit Nested Comment](./Reddit%20Nested%20Comment/Readme.md)
+- [Like-Reaction System (Facebook / LinkedIn style)](./Designing%20a%20Like-Reaction%20System%20(Facebook%20-%20LinkedIn)/Readme.md)
+
+### Productivity / Collaboration
+
+- [Google Calendar Modelling](./google-calendar-database-modelling/README.md)
+- [Room Booking Modelling](./Room-Booking-Database-Modelling/README.md)
+
+### Content / Media
+
+- [WordPress Content Management System](./wp-content-management-system/README.md)
+- [Music Streaming Service Modelling](./music-streaming-server/README.md)
+
+### Developer Platforms
+
+- [GitHub Database Modelling](./GitHub-Database-Modelling/README.md)
+
+### New additions
+
+- [E-Commerce Order + Inventory + Payment Modelling](./ecommerce-order-inventory-payment/README.md)
+- [Messaging / Chat Application Modelling](./messaging-chat-database-modelling/README.md)
+- [Ride Sharing (Uber/Ola style) Modelling](./ride-sharing-database-modelling/README.md)
+- [Ledger-first Wallet / FinTech Modelling](./wallet-ledger-database-modelling/README.md)
+
+
+### Practice sets
+
+- [50+ Database Modelling Problems Catalog](./database-modelling-problem-catalog/README.md)
 
 ---
 
-# Real-World Design Examples
+## Design checklist
 
-This repository also includes **database design examples used in real systems**, such as:
+Use this before freezing schema v1:
 
-* E-commerce platforms
-* Social networks
-* Payment systems
-* Messaging systems
-* Analytics platforms
-* SaaS multi-tenant systems
-
-These examples demonstrate **how theoretical concepts translate into practical schema designs.**
-
----
-
-# SQL Query Library
-
-A growing collection of SQL examples for:
-
-* Complex joins
-* Aggregations
-* Query optimization
-* Window functions
-* Data migration scripts
-* Schema migrations
-
-These queries help developers **write better and faster SQL.**
+- [ ] Business invariants encoded with constraints (not only app code).
+- [ ] Idempotency keys for retriable write APIs.
+- [ ] Clear ownership for counters and materialized/derived tables.
+- [ ] Indexes align with top read paths and sort orders.
+- [ ] Migrations are forward/backward compatible.
+- [ ] Audit/compliance fields included (`created_at`, `updated_at`, actor, source).
+- [ ] Archival/TTL strategy documented.
+- [ ] Multi-tenant boundaries explicitly modeled (tenant_id everywhere needed).
 
 ---
 
-# Tools for Database Modeling
+## Contributing
 
-Helpful tools included in the repository:
+Contributions are welcome.
 
-* ER diagram generators
-* Schema visualization tools
-* SQL-to-ER converters
-* Migration frameworks
-* Query performance analyzers
+Good additions include:
 
----
+- New production-inspired schema case studies.
+- SQL DDL with rationale and indexing notes.
+- Alternative designs with trade-off comparison.
+- Query patterns and migration playbooks.
 
-# Who Is This Repository For?
+If you add a case study, keep the README structure simple:
 
-This repository is designed for:
-
-### Developers
-
-Learn how to design clean and scalable schemas for applications.
-
-### Backend Engineers
-
-Understand performance implications and optimize queries.
-
-### Data Engineers
-
-Design reliable data pipelines and warehouses.
-
-### System Architects
-
-Plan robust data models for large distributed systems.
-
-### Students
-
-Build strong foundations in database design.
+1. Problem statement
+2. Core entities
+3. SQL schema
+4. Read/write patterns
+5. Scaling and consistency notes
 
 ---
 
-# How to Use This Repository
-
-### 1. Start with the Fundamentals
-
-Learn the core principles of database modeling and normalization.
-
-### 2. Explore Schema Design Patterns
-
-Understand common real-world design strategies.
-
-### 3. Study SQL Examples
-
-Practice with queries and learn performance techniques.
-
-### 4. Explore Tools
-
-Use recommended tools to visualize and build schemas.
-
-### 5. Learn from Real Systems
-
-Study practical database designs used in production systems.
-
----
-
-# Contributing
-
-Contributions are welcome! 🎉
-
-You can contribute by:
-
-* Adding database design patterns
-* Sharing SQL examples
-* Improving documentation
-* Adding real-world schema designs
-* Recommending tools and resources
-
-Steps to contribute:
-
-1. Fork the repository
-2. Create a new branch
-3. Make your changes
-4. Submit a pull request
-
-Your contributions help make this repository more valuable for developers worldwide.
-
----
-
-# Inspiration
-
-This repository is inspired by the popular **“awesome list” format**, which curates the best resources for a topic in one place.
-
-The goal is to create the **most comprehensive database modelling and design resource on GitHub.**
-
----
-
-# Get Started
-
-If you're interested in building **high-quality databases and scalable systems**, this repository is for you.
-
-Explore the resources, learn the principles, and start designing **better data models today.**
-
-⭐ **Star this repository if you find it helpful!**
+If this helps you, consider starring the repository ⭐
