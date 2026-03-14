@@ -9,6 +9,23 @@ import CaseStudyPlayground from '@site/src/components/CaseStudyPlayground';
 
 # E-Commerce: Order + Inventory + Payment Database Modelling
 
+## Problem context (why this is hard)
+
+This case study focuses on turning product behavior into dependable data models. The goal is not just to store entities, but to guarantee correct state transitions and predictable query performance.
+
+## Learning goals (what you should gain)
+
+- Map API behavior to write/read patterns.
+- Protect critical transitions with constraints, history, and idempotency.
+- Select indexes based on real filter/sort access patterns.
+
+## How to read this case study
+
+1. Start with **Problem context** to understand why this domain is tricky.
+2. Use **Learning goals** as your checklist while reading.
+3. Follow **Step-by-step reasoning** before jumping to schema choices.
+4. Compare **Okaish / Good / Best** and then use the playground to test your assumptions.
+
 ## Functional Requirement
 
 - Create and update core domain records reliably.
@@ -33,23 +50,23 @@ Domain-specific correctness usually depends on clear state transitions, not only
 Choose composite indexes from real filter+sort query shapes that this case study expects in production.
 :::
 
-## Thinking or strategy to approach this problem
+## Step-by-step reasoning before solution
 
-1. Start with the top 5 API calls (2–3 writes, 2–3 reads).
-2. Model source-of-truth tables around transaction boundaries.
-3. Add append-only history for state transitions and replayability.
-4. Add idempotency and audit trails before scale amplifies mistakes.
-5. Add denormalized read models only where latency or cost justifies them.
+1. Start from top user/API journeys.
+2. Define transactional boundaries and failure paths.
+3. Then choose schema/index patterns that support those decisions.
+4. Convert those decisions into table boundaries, keys, and constraints.
+5. Finally, validate with realistic query shapes and failure scenarios.
 
 :::note
 Keep lifecycle history and audit metadata so incidents can be explained without guesswork.
 :::
 
-## Core enttiles
+## Core entities
 
 - `inventory_reservations`
 
-## All tables and their relatoinship..
+## All tables and their relationships
 
 ### `users`
 

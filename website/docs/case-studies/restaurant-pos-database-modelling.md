@@ -9,6 +9,23 @@ import CaseStudyPlayground from '@site/src/components/CaseStudyPlayground';
 
 # Restaurant POS Database Modelling
 
+## Problem context (why this is hard)
+
+This system must coordinate many fast-moving actors (customer, merchant, delivery, payment) while preserving one consistent order truth. Most failures are not “missing tables” — they are broken state transitions and delayed side-effects.
+
+## Learning goals (what you should gain)
+
+- Map functional requirements to transactional boundaries in order flow.
+- Design status/history tracking so support teams can explain any disputed order timeline.
+- Choose read indexes for customer recency and operational dispatch screens.
+
+## How to read this case study
+
+1. Start with **Problem context** to understand why this domain is tricky.
+2. Use **Learning goals** as your checklist while reading.
+3. Follow **Step-by-step reasoning** before jumping to schema choices.
+4. Compare **Okaish / Good / Best** and then use the playground to test your assumptions.
+
 ## Functional Requirement
 
 - Create and update core domain records reliably.
@@ -33,25 +50,25 @@ In delivery workflows, the highest-risk bug is usually **wrong order state trans
 For this domain, optimize indexes around **customer recent orders** and **store active orders**; both are hot operational reads.
 :::
 
-## Thinking or strategy to approach this problem
+## Step-by-step reasoning before solution
 
-1. Start with the top 5 API calls (2–3 writes, 2–3 reads).
-2. Model source-of-truth tables around transaction boundaries.
-3. Add append-only history for state transitions and replayability.
-4. Add idempotency and audit trails before scale amplifies mistakes.
-5. Add denormalized read models only where latency or cost justifies them.
+1. Translate user journeys into write events first (create, accept, dispatch, complete, cancel).
+2. Mark which events must be transactional and which can be async projections.
+3. Add idempotency, history, and audit only where they protect real failure modes.
+4. Convert those decisions into table boundaries, keys, and constraints.
+5. Finally, validate with realistic query shapes and failure scenarios.
 
 :::note
 Model status changes as append-only timeline events so support teams can replay exactly what happened during delay/refund disputes.
 :::
 
-## Core enttiles
+## Core entities
 
 - `users`
 - `primary_records`
 - `record_items`
 
-## All tables and their relatoinship..
+## All tables and their relationships
 
 ### `users`
 

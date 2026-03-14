@@ -9,6 +9,23 @@ import CaseStudyPlayground from '@site/src/components/CaseStudyPlayground';
 
 # Airline Reservation Database Modelling
 
+## Problem context (why this is hard)
+
+Booking domains look simple until concurrency appears. The same seat/room/vehicle can be requested simultaneously, so modelling must protect availability consistency before optimization.
+
+## Learning goals (what you should gain)
+
+- Identify hold/confirm/cancel boundaries and their consistency rules.
+- Prevent overbooking with transactional writes and expiration semantics.
+- Design read models for itinerary and availability queries.
+
+## How to read this case study
+
+1. Start with **Problem context** to understand why this domain is tricky.
+2. Use **Learning goals** as your checklist while reading.
+3. Follow **Step-by-step reasoning** before jumping to schema choices.
+4. Compare **Okaish / Good / Best** and then use the playground to test your assumptions.
+
 ## Functional Requirement
 
 - Create and update core domain records reliably.
@@ -33,25 +50,25 @@ Booking systems fail when availability checks and confirmation writes are not ke
 Your top index in this domain is usually user+time or resource+time to serve recent itineraries and availability lookup.
 :::
 
-## Thinking or strategy to approach this problem
+## Step-by-step reasoning before solution
 
-1. Start with the top 5 API calls (2–3 writes, 2–3 reads).
-2. Model source-of-truth tables around transaction boundaries.
-3. Add append-only history for state transitions and replayability.
-4. Add idempotency and audit trails before scale amplifies mistakes.
-5. Add denormalized read models only where latency or cost justifies them.
+1. Write down all state transitions that can race under concurrency.
+2. Keep inventory changes and booking confirmation in one safe boundary.
+3. Add recovery paths for expired holds, retries, and compensation events.
+4. Convert those decisions into table boundaries, keys, and constraints.
+5. Finally, validate with realistic query shapes and failure scenarios.
 
 :::note
 Keep a clear hold/confirm/cancel event trail to diagnose overbooking and race conditions.
 :::
 
-## Core enttiles
+## Core entities
 
 - `users`
 - `primary_records`
 - `record_items`
 
-## All tables and their relatoinship..
+## All tables and their relationships
 
 ### `users`
 

@@ -9,6 +9,23 @@ import CaseStudyPlayground from '@site/src/components/CaseStudyPlayground';
 
 # Short Video Platform Database Modelling
 
+## Problem context (why this is hard)
+
+Realtime products are throughput-heavy and fanout-heavy. Schema quality is judged by how predictably it serves timeline/inbox reads under continuous writes.
+
+## Learning goals (what you should gain)
+
+- Model write ingestion and delivery fanout separately.
+- Design stable cursor/timeline reads for high churn feeds.
+- Capture delivery/status history for incident diagnosis.
+
+## How to read this case study
+
+1. Start with **Problem context** to understand why this domain is tricky.
+2. Use **Learning goals** as your checklist while reading.
+3. Follow **Step-by-step reasoning** before jumping to schema choices.
+4. Compare **Okaish / Good / Best** and then use the playground to test your assumptions.
+
 ## Functional Requirement
 
 - Create and update core domain records reliably.
@@ -33,25 +50,25 @@ Realtime systems are dominated by fanout/read amplification; schema design shoul
 Use compound indexes on conversation/feed key + timestamp to keep pagination stable under high concurrency.
 :::
 
-## Thinking or strategy to approach this problem
+## Step-by-step reasoning before solution
 
-1. Start with the top 5 API calls (2–3 writes, 2–3 reads).
-2. Model source-of-truth tables around transaction boundaries.
-3. Add append-only history for state transitions and replayability.
-4. Add idempotency and audit trails before scale amplifies mistakes.
-5. Add denormalized read models only where latency or cost justifies them.
+1. List hot paths that happen every second (send, fanout, fetch recent).
+2. Protect write path from duplication while keeping reads cache/index friendly.
+3. Introduce projections/read models only for proven bottlenecks.
+4. Convert those decisions into table boundaries, keys, and constraints.
+5. Finally, validate with realistic query shapes and failure scenarios.
 
 :::note
 Retain delivery/status history for troubleshooting delayed or duplicated notifications.
 :::
 
-## Core enttiles
+## Core entities
 
 - `users`
 - `primary_records`
 - `record_items`
 
-## All tables and their relatoinship..
+## All tables and their relationships
 
 ### `users`
 
