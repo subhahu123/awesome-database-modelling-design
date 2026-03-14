@@ -44,7 +44,7 @@ const config = {
     },
     announcementBar: {
       id: 'branding-refresh',
-      content: '🟣🟠 New professional theme: inspired by code.lldcoding.com (indigo + orange).',
+      content: '🟠 Theme update: default-style look with orange accents for sections and buttons.',
       backgroundColor: '#1a1f3a',
       textColor: '#ffe8d7',
       isCloseable: true,
