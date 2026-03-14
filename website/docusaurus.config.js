@@ -37,6 +37,13 @@ const config = {
 
   themeConfig: {
     image: 'img/social-card.png',
+    announcementBar: {
+      id: 'branding-refresh',
+      content: '✨ New brand theme: LLDCoding-inspired visual refresh for DB Modelling Learn.',
+      backgroundColor: '#241f52',
+      textColor: '#f4f1ff',
+      isCloseable: true,
+    },
     navbar: {
       title: 'DB Modelling Learn',
       items: [
