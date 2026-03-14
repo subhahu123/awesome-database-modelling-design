@@ -174,22 +174,23 @@ Use these to extend the repository with your own schema exercises:
 ---
 
 
-## Blog-style learning site
+## Blog-style learning site (Docusaurus 2)
 
-A lightweight learning site is now included in this repo under `docs/`, inspired by "learn in a hurry" style pages.
+The learning site now runs on **Docusaurus 2** under `website/`.
 
-- Entry page: `docs/index.html`
-- Quick track intro: `docs/learn/system-design/in-a-hurry/introduction/index.html`
-- Follow-ups: schema evolution + indexing strategy
+- Config: `website/docusaurus.config.js`
+- Sidebar: `website/sidebars.js`
+- Learn docs: `website/docs/in-a-hurry/*`
 
-You can run it locally:
+Run locally:
 
 ```bash
-cd docs
-python -m http.server 8000
+cd website
+npm install
+npm run start
 ```
 
-Then open `http://localhost:8000`.
+Open `http://localhost:3000/awesome-database-modelling-design/`.
 
 ---
 
