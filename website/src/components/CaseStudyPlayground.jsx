@@ -84,14 +84,14 @@ function pctLabel(value) {
   return 'High';
 }
 
-function formulaLines(m) {
+function formulaLines() {
   return {
-    readLatency: `read_latency_ms = 25 + traffic_load*0.35 + (100-index_fit)*0.30 + (100-model_clarity)*0.20`,
-    duplicateRisk: `duplicate_risk_% = retry_pressure*0.45 + (100-retry_safety)*0.55`,
-    debugRisk: `debug_risk_% = (100-history_clarity)*0.65 + (100-model_clarity)*0.35`,
-    scaleRisk: `scale_risk_% = traffic_load*0.35 + (100-scale_plan)*0.45 + (100-index_fit)*0.20`,
-    overallFit: `overall_fit_% = 100 - weighted(risks) + quality_bonus(index_fit,retry_safety,history_clarity)`,
-    tableLatency: `table_latency_ms = base_read_ms + table_weight*(100-index_fit)*0.12 + table_weight*(100-model_clarity)*0.08`,
+    readLatency: 'read_latency_ms = 25 + traffic_load*0.35 + (100-index_fit)*0.30 + (100-model_clarity)*0.20',
+    duplicateRisk: 'duplicate_risk_% = retry_pressure*0.45 + (100-retry_safety)*0.55',
+    debugRisk: 'debug_risk_% = (100-history_clarity)*0.65 + (100-model_clarity)*0.35',
+    scaleRisk: 'scale_risk_% = traffic_load*0.35 + (100-scale_plan)*0.45 + (100-index_fit)*0.20',
+    overallFit: 'overall_fit_% = 100 - weighted(risks) + quality_bonus(index_fit,retry_safety,history_clarity)',
+    tableLatency: 'table_latency_ms = base_read_ms + table_weight*(100-index_fit)*0.12 + table_weight*(100-model_clarity)*0.08',
   };
 }
 
@@ -135,11 +135,39 @@ export default function CaseStudyPlayground({caseSlug}) {
       return {table, latency, risk, width: clamp(Math.round((latency / 160) * 100), 8, 100)};
     });
 
+    const frCoverage = [
+      {
+        req: 'Create/update records reliably',
+        score: clamp(Math.round((retrySafety * 0.5 + modelClarity * 0.3 + (100 - duplicateRisk) * 0.2)), 0, 100),
+        how: 'Idempotent writes + clear ownership/relations reduce duplicate or broken writes.',
+      },
+      {
+        req: 'Fast read APIs',
+        score: clamp(Math.round((indexFit * 0.65 + (100 - Math.min(baseReadMs, 140)) * 0.35)), 0, 100),
+        how: 'Better query/index fit lowers latency on hot list/detail endpoints.',
+      },
+      {
+        req: 'Lifecycle transition tracking',
+        score: clamp(Math.round((historyClarity * 0.8 + modelClarity * 0.2)), 0, 100),
+        how: 'Append-only history makes state transitions replayable and debuggable.',
+      },
+      {
+        req: 'Safe retries without duplicate effects',
+        score: clamp(Math.round((retrySafety * 0.75 + (100 - duplicateRisk) * 0.25)), 0, 100),
+        how: 'Retry-safe writes and constraints block duplicate business actions.',
+      },
+      {
+        req: 'Operational visibility',
+        score: clamp(Math.round((historyClarity * 0.55 + (100 - debugRisk) * 0.45)), 0, 100),
+        how: 'High history clarity lowers debug risk and speeds incident diagnosis.',
+      },
+    ];
+
     let verdict = 'Good fit';
     if (overallFit < 55 || duplicateRisk > 50 || scaleRisk > 60) verdict = 'Needs redesign';
     if (overallFit > 82 && duplicateRisk < 20 && debugRisk < 25 && scaleRisk < 30) verdict = 'Best-ready';
 
-    return {baseReadMs, duplicateRisk, debugRisk, scaleRisk, overallFit, verdict, tableStats};
+    return {baseReadMs, duplicateRisk, debugRisk, scaleRisk, overallFit, verdict, tableStats, frCoverage};
   }, [trafficLoad, retryPressure, indexFit, retrySafety, historyClarity, scalePlan, modelClarity, context.tables]);
 
   const formulas = formulaLines();
@@ -174,6 +202,27 @@ export default function CaseStudyPlayground({caseSlug}) {
 
       <div className="case-playground-grid">
         <section className="case-card">
+          <h4>How to calculate these percentages</h4>
+          <ul>
+            <li><strong>Index fit %:</strong> (important read queries using correct index ÷ total important read queries) × 100.</li>
+            <li><strong>Retry-safe handling %:</strong> (write APIs protected by idempotency/unique constraints ÷ total write APIs) × 100.</li>
+            <li><strong>History clarity %:</strong> (critical state changes stored in append-only history ÷ total critical state changes) × 100.</li>
+            <li><strong>Scale plan %:</strong> estimate of readiness for growth (partitioning, async projections, backpressure, hotspot handling).</li>
+            <li><strong>Table/relationship clarity %:</strong> percentage of important relations with clear FK/ownership rules and non-ambiguous joins.</li>
+          </ul>
+
+          <h4>Formula used in playground</h4>
+          <pre className="playground-formula">
+{`${formulas.readLatency}
+${formulas.duplicateRisk}
+${formulas.debugRisk}
+${formulas.scaleRisk}
+${formulas.overallFit}
+${formulas.tableLatency}`}
+          </pre>
+        </section>
+
+        <section className="case-card">
           <h4>Set percentages (how you model your strategy)</h4>
           <label>
             Traffic load: <strong>{trafficLoad}%</strong> ({pctLabel(trafficLoad)})
@@ -204,27 +253,6 @@ export default function CaseStudyPlayground({caseSlug}) {
             <input type="range" min="0" max="100" step="1" value={modelClarity} onChange={e => setModelClarity(Number(e.target.value))} />
           </label>
         </section>
-
-        <section className="case-card">
-          <h4>How to calculate these percentages</h4>
-          <ul>
-            <li><strong>Index fit %:</strong> (important read queries using correct index ÷ total important read queries) × 100.</li>
-            <li><strong>Retry-safe handling %:</strong> (write APIs protected by idempotency/unique constraints ÷ total write APIs) × 100.</li>
-            <li><strong>History clarity %:</strong> (critical state changes stored in append-only history ÷ total critical state changes) × 100.</li>
-            <li><strong>Scale plan %:</strong> estimate of readiness for growth (partitioning, async projections, backpressure, hotspot handling).</li>
-            <li><strong>Table/relationship clarity %:</strong> percentage of important relations with clear FK/ownership rules and non-ambiguous joins.</li>
-          </ul>
-
-          <h4>Formula used in playground</h4>
-          <pre className="playground-formula">
-{`${formulas.readLatency}
-${formulas.duplicateRisk}
-${formulas.debugRisk}
-${formulas.scaleRisk}
-${formulas.overallFit}
-${formulas.tableLatency}`}
-          </pre>
-        </section>
       </div>
 
       <div className="case-playground-grid">
@@ -238,6 +266,26 @@ ${formulas.tableLatency}`}
             <div><span>Overall fit</span><strong>{calc.overallFit}/100</strong></div>
           </div>
           <p><strong>Verdict:</strong> {calc.verdict}</p>
+
+          <h4>Complete solution diagram (functional requirements)</h4>
+          <div className="solution-flow-diagram">
+            <span>Request</span>
+            <span>Validate</span>
+            <span>Write + History</span>
+            <span>Read / Respond</span>
+          </div>
+          {calc.frCoverage.map(item => (
+            <div key={item.req} className="fr-row">
+              <div className="fr-header">
+                <strong>{item.req}</strong>
+                <span>{item.score}%</span>
+              </div>
+              <div className="table-impact-track">
+                <div className="table-impact-fill" style={{width: `${item.score}%`}} />
+              </div>
+              <p>{item.how}</p>
+            </div>
+          ))}
         </section>
 
         <section className="case-card">
