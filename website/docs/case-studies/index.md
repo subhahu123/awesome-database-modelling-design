@@ -62,6 +62,11 @@ Think in **query shapes**, not entities alone. Entity-first modelling without qu
 
 ## Visual understanding (auto-generated)
 
+
+:::tip Want a hands-on demo?
+Open the **Interactive playground** page (`/path/interactive-playground`) to simulate indexes, idempotency, retries, and audit features live.
+:::
+
 These visuals are a quick mental model of the same schema and workflow described above. Start with ER (what is linked), then lifecycle (how writes happen safely), then query path (why reads are fast).
 
 ### ER relationship diagram

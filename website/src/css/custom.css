@@ -75,24 +75,32 @@ html[data-theme='dark'] {
 }
 
 /* Animate Mermaid diagrams on case-study docs for easier visual tracing */
-[class*='docs-doc-id-case-studies-'] .mermaid svg .edgePath path {
+body[class*='docs-doc-id-case-studies-'] .mermaid svg .edgePath path,
+body[class*='docs-doc-id-case-studies-'] .mermaid svg path.flowchart-link,
+body[class*='docs-doc-id-case-studies-'] .mermaid svg .relationshipLine {
   stroke-dasharray: 8;
-  animation: case-study-flow 6s linear infinite;
+  animation: case-study-flow 4.5s linear infinite;
 }
 
-[class*='docs-doc-id-case-studies-'] .mermaid svg .node rect,
-[class*='docs-doc-id-case-studies-'] .mermaid svg .node circle,
-[class*='docs-doc-id-case-studies-'] .mermaid svg .node polygon,
-[class*='docs-doc-id-case-studies-'] .mermaid svg .node path {
+body[class*='docs-doc-id-case-studies-'] .mermaid svg .node rect,
+body[class*='docs-doc-id-case-studies-'] .mermaid svg .node circle,
+body[class*='docs-doc-id-case-studies-'] .mermaid svg .node polygon,
+body[class*='docs-doc-id-case-studies-'] .mermaid svg .node path,
+body[class*='docs-doc-id-case-studies-'] .mermaid svg .entityBox,
+body[class*='docs-doc-id-case-studies-'] .mermaid svg g.node > g > rect {
   transform-origin: center;
   transform-box: fill-box;
-  animation: case-study-pulse 3.2s ease-in-out infinite;
+  animation: case-study-pulse 2.4s ease-in-out infinite;
 }
 
-[class*='docs-doc-id-case-studies-'] .mermaid svg .node:nth-of-type(2n) rect,
-[class*='docs-doc-id-case-studies-'] .mermaid svg .node:nth-of-type(2n) circle,
-[class*='docs-doc-id-case-studies-'] .mermaid svg .node:nth-of-type(2n) polygon,
-[class*='docs-doc-id-case-studies-'] .mermaid svg .node:nth-of-type(2n) path {
+body[class*='docs-doc-id-case-studies-'] .mermaid {
+  animation: case-study-pop-in 500ms ease-out both;
+}
+
+body[class*='docs-doc-id-case-studies-'] .mermaid svg .node:nth-of-type(2n) rect,
+body[class*='docs-doc-id-case-studies-'] .mermaid svg .node:nth-of-type(2n) circle,
+body[class*='docs-doc-id-case-studies-'] .mermaid svg .node:nth-of-type(2n) polygon,
+body[class*='docs-doc-id-case-studies-'] .mermaid svg .node:nth-of-type(2n) path {
   animation-delay: 0.8s;
 }
 
@@ -114,17 +122,92 @@ html[data-theme='dark'] {
   }
 
   50% {
-    filter: drop-shadow(0 0 7px rgb(255 161 22 / 0.42));
-    transform: scale(1.013);
+    filter: drop-shadow(0 0 10px rgb(255 161 22 / 0.48));
+    transform: scale(1.028);
+  }
+}
+
+@keyframes case-study-pop-in {
+  from {
+    opacity: 0.25;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [class*='docs-doc-id-case-studies-'] .mermaid svg .edgePath path,
-  [class*='docs-doc-id-case-studies-'] .mermaid svg .node rect,
-  [class*='docs-doc-id-case-studies-'] .mermaid svg .node circle,
-  [class*='docs-doc-id-case-studies-'] .mermaid svg .node polygon,
-  [class*='docs-doc-id-case-studies-'] .mermaid svg .node path {
+  body[class*='docs-doc-id-case-studies-'] .mermaid,
+  body[class*='docs-doc-id-case-studies-'] .mermaid svg .edgePath path,
+  body[class*='docs-doc-id-case-studies-'] .mermaid svg path.flowchart-link,
+  body[class*='docs-doc-id-case-studies-'] .mermaid svg .relationshipLine,
+  body[class*='docs-doc-id-case-studies-'] .mermaid svg .node rect,
+  body[class*='docs-doc-id-case-studies-'] .mermaid svg .node circle,
+  body[class*='docs-doc-id-case-studies-'] .mermaid svg .node polygon,
+  body[class*='docs-doc-id-case-studies-'] .mermaid svg .node path,
+  body[class*='docs-doc-id-case-studies-'] .mermaid svg .entityBox,
+  body[class*='docs-doc-id-case-studies-'] .mermaid svg g.node > g > rect {
     animation: none;
   }
+}
+
+/* Interactive playground styling */
+.case-playground {
+  border: 1px solid rgb(255 161 22 / 0.25);
+  border-radius: 14px;
+  padding: 1rem;
+  background: linear-gradient(180deg, rgb(255 161 22 / 0.08), rgb(255 161 22 / 0.02));
+}
+
+.case-playground-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.case-card {
+  border: 1px solid rgb(255 161 22 / 0.3);
+  border-radius: 10px;
+  padding: 0.85rem;
+  background: rgb(0 0 0 / 0.15);
+}
+
+.case-card label {
+  display: block;
+  margin: 0.7rem 0;
+}
+
+.case-card select,
+.case-card input[type='range'] {
+  width: 100%;
+  margin-top: 0.35rem;
+}
+
+.case-toggle {
+  display: flex !important;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(110px, 1fr));
+  gap: 0.55rem;
+  margin-bottom: 0.7rem;
+}
+
+.metrics div {
+  border: 1px solid rgb(255 161 22 / 0.26);
+  border-radius: 8px;
+  padding: 0.45rem;
+  background: rgb(255 161 22 / 0.05);
+}
+
+.metrics span {
+  display: block;
+  font-size: 0.8rem;
+  opacity: 0.85;
 }
