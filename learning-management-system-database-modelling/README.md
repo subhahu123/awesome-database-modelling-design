@@ -2,150 +2,150 @@
 
 ## 1) Problem statement
 
-Model an LMS similar to Coursera/Udemy internal platform with support for:
+Design a production-grade schema for **Learning Management System (LMS)** with:
 
-- multi-instructor course authoring
-- module/lesson hierarchy and versioning
-- enrollments, progress tracking, and completion certificates
-- quizzes with attempts and graded submissions
+- correct relational constraints
+- query-oriented indexes
+- auditable state transitions
+- a clear migration path from v1 to v2
 
-## 2) Core entities
+---
+
+## 2) Basic solution (v1)
+
+A minimal starting model teams typically build first.
+
+### Core entities (v1)
 
 - `users`
-- `courses`
-- `course_instructors`
-- `course_modules`
-- `lessons`
-- `enrollments`
-- `lesson_progress`
-- `quizzes`
-- `quiz_questions`
-- `quiz_attempts`
+- `primary_records`
+- `record_items`
 
-## 3) Reference schema
+### Starter schema (v1)
 
 ```sql
 CREATE TABLE users (
   user_id BIGINT PRIMARY KEY,
-  full_name VARCHAR(120) NOT NULL,
-  email VARCHAR(255) NOT NULL UNIQUE,
-  role VARCHAR(20) NOT NULL, -- STUDENT | INSTRUCTOR | ADMIN
+  name VARCHAR(120) NOT NULL,
+  email VARCHAR(255) UNIQUE,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE courses (
-  course_id BIGINT PRIMARY KEY,
-  title VARCHAR(255) NOT NULL,
-  description TEXT,
-  level VARCHAR(20), -- BEGINNER | INTERMEDIATE | ADVANCED
-  status VARCHAR(20) NOT NULL DEFAULT 'DRAFT', -- DRAFT | PUBLISHED | ARCHIVED
-  published_at TIMESTAMP,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE course_instructors (
-  course_id BIGINT NOT NULL,
-  instructor_id BIGINT NOT NULL,
-  is_primary BOOLEAN NOT NULL DEFAULT FALSE,
-  assigned_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (course_id, instructor_id),
-  FOREIGN KEY (course_id) REFERENCES courses(course_id),
-  FOREIGN KEY (instructor_id) REFERENCES users(user_id)
-);
-
-CREATE TABLE course_modules (
-  module_id BIGINT PRIMARY KEY,
-  course_id BIGINT NOT NULL,
-  module_title VARCHAR(255) NOT NULL,
-  sort_order INT NOT NULL,
-  FOREIGN KEY (course_id) REFERENCES courses(course_id),
-  UNIQUE (course_id, sort_order)
-);
-
-CREATE TABLE lessons (
-  lesson_id BIGINT PRIMARY KEY,
-  module_id BIGINT NOT NULL,
-  lesson_title VARCHAR(255) NOT NULL,
-  lesson_type VARCHAR(20) NOT NULL, -- VIDEO | ARTICLE | ASSIGNMENT
-  duration_seconds INT,
-  sort_order INT NOT NULL,
-  FOREIGN KEY (module_id) REFERENCES course_modules(module_id),
-  UNIQUE (module_id, sort_order)
-);
-
-CREATE TABLE enrollments (
-  enrollment_id BIGINT PRIMARY KEY,
+CREATE TABLE primary_records (
+  record_id BIGINT PRIMARY KEY,
   user_id BIGINT NOT NULL,
-  course_id BIGINT NOT NULL,
-  enrolled_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  completed_at TIMESTAMP,
-  completion_percent DECIMAL(5,2) NOT NULL DEFAULT 0,
-  status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE | COMPLETED | DROPPED
-  FOREIGN KEY (user_id) REFERENCES users(user_id),
-  FOREIGN KEY (course_id) REFERENCES courses(course_id),
-  UNIQUE (user_id, course_id)
+  status VARCHAR(30) NOT NULL,
+  total_cents BIGINT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
-CREATE TABLE lesson_progress (
-  user_id BIGINT NOT NULL,
-  lesson_id BIGINT NOT NULL,
-  started_at TIMESTAMP,
-  completed_at TIMESTAMP,
-  watch_seconds INT NOT NULL DEFAULT 0,
-  PRIMARY KEY (user_id, lesson_id),
-  FOREIGN KEY (user_id) REFERENCES users(user_id),
-  FOREIGN KEY (lesson_id) REFERENCES lessons(lesson_id)
-);
-
-CREATE TABLE quizzes (
-  quiz_id BIGINT PRIMARY KEY,
-  lesson_id BIGINT NOT NULL,
-  title VARCHAR(255) NOT NULL,
-  passing_score INT NOT NULL DEFAULT 60,
-  max_attempts INT NOT NULL DEFAULT 3,
-  FOREIGN KEY (lesson_id) REFERENCES lessons(lesson_id)
-);
-
-CREATE TABLE quiz_attempts (
-  attempt_id BIGINT PRIMARY KEY,
-  quiz_id BIGINT NOT NULL,
-  user_id BIGINT NOT NULL,
-  attempt_no INT NOT NULL,
-  score INT,
-  started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  submitted_at TIMESTAMP,
-  FOREIGN KEY (quiz_id) REFERENCES quizzes(quiz_id),
-  FOREIGN KEY (user_id) REFERENCES users(user_id),
-  UNIQUE (quiz_id, user_id, attempt_no)
+CREATE TABLE record_items (
+  item_id BIGINT PRIMARY KEY,
+  record_id BIGINT NOT NULL,
+  item_name VARCHAR(255) NOT NULL,
+  quantity INT NOT NULL DEFAULT 1,
+  amount_cents BIGINT NOT NULL DEFAULT 0,
+  FOREIGN KEY (record_id) REFERENCES primary_records(record_id)
 );
 ```
 
-## 4) Query-driven indexes
+### Useful v1 indexes
 
 ```sql
-CREATE INDEX idx_courses_status_published
-  ON courses(status, published_at DESC);
+CREATE INDEX idx_primary_records_user_created
+  ON primary_records(user_id, created_at DESC);
 
-CREATE INDEX idx_enrollments_user_status
-  ON enrollments(user_id, status, enrolled_at DESC);
-
-CREATE INDEX idx_lesson_progress_user
-  ON lesson_progress(user_id, completed_at DESC);
-
-CREATE INDEX idx_quiz_attempts_user_submitted
-  ON quiz_attempts(user_id, submitted_at DESC);
+CREATE INDEX idx_record_items_record
+  ON record_items(record_id);
 ```
 
-## 5) Read/write patterns
+---
 
-- **Course catalog API:** list only `PUBLISHED` courses ordered by `published_at`.
-- **My learning dashboard:** join `enrollments` + `courses` + derived progress from `lesson_progress`.
-- **Course player:** module/lesson tree loaded by `course_id` and sorted by `sort_order`.
-- **Quiz grading workflow:** append attempts, cap via `max_attempts`, and compute best/latest score.
+## 3) Design choices to question (what breaks in v1)
 
-## 6) Scaling and consistency notes
+Typical problems in the basic design:
 
-- Store progress at lesson granularity to avoid expensive full-course recomputation.
-- Maintain denormalized aggregates (e.g., `completion_percent`) asynchronously for fast dashboards.
-- Keep course content version metadata if edits should not affect already enrolled batches.
-- Archive stale progress/attempt telemetry to cold storage for long-term analytics.
+1. **No lifecycle history**: only current `status` is stored; transitions are not auditable.
+2. **Weak idempotency**: retried external writes can create duplicates.
+3. **No tenant boundary**: hard to isolate enterprise customers or regional data.
+4. **Limited compliance traceability**: actor/source metadata is missing.
+5. **Read/write coupling**: dashboards and transactional writes fight over same tables.
+
+---
+
+## 4) Improved solution (v2)
+
+Upgrade v1 by adding lifecycle history, idempotency, and auditability.
+
+### Added entities (v2)
+
+- `record_status_history` (append-only transitions)
+- `idempotency_keys` (dedupe retried writes)
+- `audit_logs` (actor + action trail)
+
+### Improved schema additions (v2)
+
+```sql
+CREATE TABLE record_status_history (
+  record_id BIGINT NOT NULL,
+  sequence_no INT NOT NULL,
+  from_status VARCHAR(30),
+  to_status VARCHAR(30) NOT NULL,
+  changed_by BIGINT,
+  changed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (record_id, sequence_no),
+  FOREIGN KEY (record_id) REFERENCES primary_records(record_id)
+);
+
+CREATE TABLE idempotency_keys (
+  idempotency_key VARCHAR(100) PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  request_hash VARCHAR(128) NOT NULL,
+  response_ref VARCHAR(100),
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  expires_at TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+CREATE TABLE audit_logs (
+  audit_id BIGINT PRIMARY KEY,
+  entity_type VARCHAR(40) NOT NULL,
+  entity_id BIGINT NOT NULL,
+  actor_id BIGINT,
+  action VARCHAR(40) NOT NULL,
+  source VARCHAR(40),
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Improved indexes (v2)
+
+```sql
+CREATE INDEX idx_primary_records_status_created
+  ON primary_records(status, created_at DESC);
+
+CREATE INDEX idx_status_history_record_time
+  ON record_status_history(record_id, changed_at DESC);
+
+CREATE INDEX idx_audit_entity_time
+  ON audit_logs(entity_type, entity_id, created_at DESC);
+```
+
+---
+
+## 5) Read/write patterns after the fix
+
+- **Write path**: transactionally update `primary_records` + append `record_status_history`.
+- **Retry-safe APIs**: check `idempotency_keys` before creating/updating records.
+- **Operational forensics**: use `audit_logs` for investigations and compliance checks.
+- **Read models**: optionally build denormalized projections for heavy dashboards.
+
+---
+
+## 6) Production notes
+
+- Keep schema constraints as the source of truth for critical invariants.
+- Prefer append-only history tables for reversible debugging and replay.
+- Use online/backward-compatible migrations (`ADD COLUMN`, dual-write, then cleanup).
+- Partition by tenant/time when volume grows.

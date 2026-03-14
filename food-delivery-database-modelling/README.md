@@ -2,150 +2,150 @@
 
 ## 1) Problem statement
 
-Design a schema for a food-delivery platform that supports:
+Design a production-grade schema for **Food Delivery (Swiggy/Zomato/UberEats style)** with:
 
-- restaurant onboarding and menu management
-- cart + checkout + payment state transitions
-- real-time delivery lifecycle and rider assignment
-- refunds, cancellations, and order analytics
+- correct relational constraints
+- query-oriented indexes
+- auditable state transitions
+- a clear migration path from v1 to v2
 
-## 2) Core entities
+---
 
-- `customers`
-- `restaurants`
-- `restaurant_menu_items`
-- `delivery_partners`
-- `orders`
-- `order_items`
-- `order_status_history`
-- `payments`
-- `deliveries`
+## 2) Basic solution (v1)
 
-## 3) Reference schema
+A minimal starting model teams typically build first.
+
+### Core entities (v1)
+
+- `users`
+- `primary_records`
+- `record_items`
+
+### Starter schema (v1)
 
 ```sql
-CREATE TABLE customers (
-  customer_id BIGINT PRIMARY KEY,
-  full_name VARCHAR(120) NOT NULL,
-  phone VARCHAR(20) UNIQUE NOT NULL,
-  email VARCHAR(255),
+CREATE TABLE users (
+  user_id BIGINT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  email VARCHAR(255) UNIQUE,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE restaurants (
-  restaurant_id BIGINT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  city VARCHAR(80) NOT NULL,
-  status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE | INACTIVE
-  opened_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE restaurant_menu_items (
-  menu_item_id BIGINT PRIMARY KEY,
-  restaurant_id BIGINT NOT NULL,
-  item_name VARCHAR(255) NOT NULL,
-  is_veg BOOLEAN NOT NULL,
-  list_price_cents BIGINT NOT NULL CHECK (list_price_cents >= 0),
-  is_available BOOLEAN NOT NULL DEFAULT TRUE,
-  FOREIGN KEY (restaurant_id) REFERENCES restaurants(restaurant_id)
-);
-
-
-CREATE TABLE delivery_partners (
-  partner_id BIGINT PRIMARY KEY,
-  full_name VARCHAR(120) NOT NULL,
-  phone VARCHAR(20) NOT NULL UNIQUE,
-  vehicle_type VARCHAR(30) NOT NULL, -- BIKE | SCOOTER | CAR
-  status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE orders (
-  order_id BIGINT PRIMARY KEY,
-  customer_id BIGINT NOT NULL,
-  restaurant_id BIGINT NOT NULL,
-  order_status VARCHAR(30) NOT NULL, -- PLACED | PREPARING | PICKED_UP | DELIVERED | CANCELLED
-  subtotal_cents BIGINT NOT NULL CHECK (subtotal_cents >= 0),
-  delivery_fee_cents BIGINT NOT NULL DEFAULT 0 CHECK (delivery_fee_cents >= 0),
-  total_cents BIGINT NOT NULL CHECK (total_cents >= 0),
-  placed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  delivered_at TIMESTAMP,
-  FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
-  FOREIGN KEY (restaurant_id) REFERENCES restaurants(restaurant_id)
-);
-
-CREATE TABLE order_items (
-  order_item_id BIGINT PRIMARY KEY,
-  order_id BIGINT NOT NULL,
-  menu_item_id BIGINT NOT NULL,
-  quantity INT NOT NULL CHECK (quantity > 0),
-  unit_price_cents BIGINT NOT NULL CHECK (unit_price_cents >= 0),
-  line_total_cents BIGINT NOT NULL CHECK (line_total_cents >= 0),
-  FOREIGN KEY (order_id) REFERENCES orders(order_id),
-  FOREIGN KEY (menu_item_id) REFERENCES restaurant_menu_items(menu_item_id)
-);
-
-CREATE TABLE order_status_history (
-  order_id BIGINT NOT NULL,
-  sequence_no INT NOT NULL,
+CREATE TABLE primary_records (
+  record_id BIGINT PRIMARY KEY,
+  user_id BIGINT NOT NULL,
   status VARCHAR(30) NOT NULL,
-  changed_by VARCHAR(30) NOT NULL, -- SYSTEM | CUSTOMER | RESTAURANT | DELIVERY_PARTNER
-  changed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (order_id, sequence_no),
-  FOREIGN KEY (order_id) REFERENCES orders(order_id)
-);
-
-CREATE TABLE payments (
-  payment_id BIGINT PRIMARY KEY,
-  order_id BIGINT NOT NULL UNIQUE,
-  provider VARCHAR(30) NOT NULL,
-  provider_ref VARCHAR(80),
-  amount_cents BIGINT NOT NULL CHECK (amount_cents >= 0),
-  status VARCHAR(20) NOT NULL, -- INITIATED | AUTHORIZED | CAPTURED | FAILED | REFUNDED
-  idempotency_key VARCHAR(80) UNIQUE NOT NULL,
+  total_cents BIGINT NOT NULL DEFAULT 0,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (order_id) REFERENCES orders(order_id)
+  FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
-CREATE TABLE deliveries (
-  delivery_id BIGINT PRIMARY KEY,
-  order_id BIGINT NOT NULL UNIQUE,
-  partner_id BIGINT,
-  pickup_eta TIMESTAMP,
-  drop_eta TIMESTAMP,
-  picked_up_at TIMESTAMP,
-  dropped_at TIMESTAMP,
-  FOREIGN KEY (order_id) REFERENCES orders(order_id),
-  FOREIGN KEY (partner_id) REFERENCES delivery_partners(partner_id)
+CREATE TABLE record_items (
+  item_id BIGINT PRIMARY KEY,
+  record_id BIGINT NOT NULL,
+  item_name VARCHAR(255) NOT NULL,
+  quantity INT NOT NULL DEFAULT 1,
+  amount_cents BIGINT NOT NULL DEFAULT 0,
+  FOREIGN KEY (record_id) REFERENCES primary_records(record_id)
 );
 ```
 
-## 4) Query-driven indexes
+### Useful v1 indexes
 
 ```sql
-CREATE INDEX idx_orders_customer_placed
-  ON orders(customer_id, placed_at DESC);
+CREATE INDEX idx_primary_records_user_created
+  ON primary_records(user_id, created_at DESC);
 
-CREATE INDEX idx_orders_restaurant_status
-  ON orders(restaurant_id, order_status, placed_at DESC);
-
-CREATE INDEX idx_order_status_history_changed
-  ON order_status_history(order_id, changed_at DESC);
-
-CREATE INDEX idx_payments_status_created
-  ON payments(status, created_at DESC);
+CREATE INDEX idx_record_items_record
+  ON record_items(record_id);
 ```
 
-## 5) Read/write patterns
+---
 
-- **Order timeline API:** `orders` + `order_status_history` for state machine progression.
-- **Restaurant dashboard:** filter by `(restaurant_id, order_status)` for active queues.
-- **Customer history:** paginate by `(customer_id, placed_at DESC)`.
-- **Payment retries:** enforce idempotency with `idempotency_key` to prevent double charge.
+## 3) Design choices to question (what breaks in v1)
 
-## 6) Scaling and consistency notes
+Typical problems in the basic design:
 
-- Keep order status changes append-only in `order_status_history` for auditability.
-- Store payment state separately from order state so failed captures don't corrupt order data.
-- Consider geo-partitioning `orders` by city/region at large scale.
-- Use outbox events (`order_created`, `order_picked_up`, `order_delivered`) for async notifications.
+1. **No lifecycle history**: only current `status` is stored; transitions are not auditable.
+2. **Weak idempotency**: retried external writes can create duplicates.
+3. **No tenant boundary**: hard to isolate enterprise customers or regional data.
+4. **Limited compliance traceability**: actor/source metadata is missing.
+5. **Read/write coupling**: dashboards and transactional writes fight over same tables.
+
+---
+
+## 4) Improved solution (v2)
+
+Upgrade v1 by adding lifecycle history, idempotency, and auditability.
+
+### Added entities (v2)
+
+- `record_status_history` (append-only transitions)
+- `idempotency_keys` (dedupe retried writes)
+- `audit_logs` (actor + action trail)
+
+### Improved schema additions (v2)
+
+```sql
+CREATE TABLE record_status_history (
+  record_id BIGINT NOT NULL,
+  sequence_no INT NOT NULL,
+  from_status VARCHAR(30),
+  to_status VARCHAR(30) NOT NULL,
+  changed_by BIGINT,
+  changed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (record_id, sequence_no),
+  FOREIGN KEY (record_id) REFERENCES primary_records(record_id)
+);
+
+CREATE TABLE idempotency_keys (
+  idempotency_key VARCHAR(100) PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  request_hash VARCHAR(128) NOT NULL,
+  response_ref VARCHAR(100),
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  expires_at TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+CREATE TABLE audit_logs (
+  audit_id BIGINT PRIMARY KEY,
+  entity_type VARCHAR(40) NOT NULL,
+  entity_id BIGINT NOT NULL,
+  actor_id BIGINT,
+  action VARCHAR(40) NOT NULL,
+  source VARCHAR(40),
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Improved indexes (v2)
+
+```sql
+CREATE INDEX idx_primary_records_status_created
+  ON primary_records(status, created_at DESC);
+
+CREATE INDEX idx_status_history_record_time
+  ON record_status_history(record_id, changed_at DESC);
+
+CREATE INDEX idx_audit_entity_time
+  ON audit_logs(entity_type, entity_id, created_at DESC);
+```
+
+---
+
+## 5) Read/write patterns after the fix
+
+- **Write path**: transactionally update `primary_records` + append `record_status_history`.
+- **Retry-safe APIs**: check `idempotency_keys` before creating/updating records.
+- **Operational forensics**: use `audit_logs` for investigations and compliance checks.
+- **Read models**: optionally build denormalized projections for heavy dashboards.
+
+---
+
+## 6) Production notes
+
+- Keep schema constraints as the source of truth for critical invariants.
+- Prefer append-only history tables for reversible debugging and replay.
+- Use online/backward-compatible migrations (`ADD COLUMN`, dual-write, then cleanup).
+- Partition by tenant/time when volume grows.
