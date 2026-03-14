@@ -171,7 +171,7 @@ Use **Best** only where workload justifies complexity. Over-engineering early ca
 
 ## Interactive solution sandbox
 
-Use this in-page playground with your case context. Start with **Okaish / Good / Best** presets, then tweak workload, table/relationship design, and solution variables to see how data behavior changes.
+Start with **Okaish / Good / Best** from this case study, then tweak simple sliders to see how your design decisions change outcomes.
 
 <CaseStudyPlayground caseSlug="video-conferencing-database-modelling" />
 
