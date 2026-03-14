@@ -202,27 +202,6 @@ export default function CaseStudyPlayground({caseSlug}) {
 
       <div className="case-playground-grid">
         <section className="case-card">
-          <h4>How to calculate these percentages</h4>
-          <ul>
-            <li><strong>Index fit %:</strong> (important read queries using correct index ÷ total important read queries) × 100.</li>
-            <li><strong>Retry-safe handling %:</strong> (write APIs protected by idempotency/unique constraints ÷ total write APIs) × 100.</li>
-            <li><strong>History clarity %:</strong> (critical state changes stored in append-only history ÷ total critical state changes) × 100.</li>
-            <li><strong>Scale plan %:</strong> estimate of readiness for growth (partitioning, async projections, backpressure, hotspot handling).</li>
-            <li><strong>Table/relationship clarity %:</strong> percentage of important relations with clear FK/ownership rules and non-ambiguous joins.</li>
-          </ul>
-
-          <h4>Formula used in playground</h4>
-          <pre className="playground-formula">
-{`${formulas.readLatency}
-${formulas.duplicateRisk}
-${formulas.debugRisk}
-${formulas.scaleRisk}
-${formulas.overallFit}
-${formulas.tableLatency}`}
-          </pre>
-        </section>
-
-        <section className="case-card">
           <h4>Set percentages (how you model your strategy)</h4>
           <label>
             Traffic load: <strong>{trafficLoad}%</strong> ({pctLabel(trafficLoad)})
@@ -252,10 +231,27 @@ ${formulas.tableLatency}`}
             Table/relationship clarity: <strong>{modelClarity}%</strong> ({pctLabel(modelClarity)})
             <input type="range" min="0" max="100" step="1" value={modelClarity} onChange={e => setModelClarity(Number(e.target.value))} />
           </label>
-        </section>
-      </div>
 
-      <div className="case-playground-grid">
+          <h4>How to calculate these percentages</h4>
+          <ul>
+            <li><strong>Index fit %:</strong> (important read queries using correct index ÷ total important read queries) × 100.</li>
+            <li><strong>Retry-safe handling %:</strong> (write APIs protected by idempotency/unique constraints ÷ total write APIs) × 100.</li>
+            <li><strong>History clarity %:</strong> (critical state changes stored in append-only history ÷ total critical state changes) × 100.</li>
+            <li><strong>Scale plan %:</strong> estimate of readiness for growth (partitioning, async projections, backpressure, hotspot handling).</li>
+            <li><strong>Table/relationship clarity %:</strong> percentage of important relations with clear FK/ownership rules and non-ambiguous joins.</li>
+          </ul>
+
+          <h4>Formula used in playground</h4>
+          <pre className="playground-formula">
+{`${formulas.readLatency}
+${formulas.duplicateRisk}
+${formulas.debugRisk}
+${formulas.scaleRisk}
+${formulas.overallFit}
+${formulas.tableLatency}`}
+          </pre>
+        </section>
+
         <section className="case-card">
           <h4>System-level outcome</h4>
           <div className="metrics">
@@ -286,9 +282,7 @@ ${formulas.tableLatency}`}
               <p>{item.how}</p>
             </div>
           ))}
-        </section>
 
-        <section className="case-card">
           <h4>Table-level impact visual</h4>
           <p>These bars show where user requests are likely to observe higher latency/risk first.</p>
           {calc.tableStats.map(s => (
@@ -304,6 +298,7 @@ ${formulas.tableLatency}`}
           ))}
         </section>
       </div>
+
     </div>
   );
 }
