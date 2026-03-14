@@ -59,6 +59,39 @@ Think in **query shapes**, not entities alone. Entity-first modelling without qu
 
 - No explicit FK found in source SQL; relationship links should be defined per business flow.
 
+
+## Visual understanding (auto-generated)
+
+### ER relationship diagram
+
+```mermaid
+erDiagram
+  PRIMARY_RECORDS {
+    bigint id
+  }
+```
+
+### Write lifecycle flow
+
+```mermaid
+flowchart LR
+  A[API Request] --> B[Validate Input]
+  B --> C[Open Transaction]
+  C --> D[Write/Update Core Tables]
+  D --> E[Append History or Audit]
+  E --> F[Commit]
+  F --> G[Read Model / API Response]
+```
+
+### Query/index execution view
+
+```mermaid
+flowchart TD
+  Q[Read Query] --> I[(Composite Index)]
+  I --> P[Page/Sort Result]
+  P --> R[Low-latency Response]
+```
+
 ## Approach the solution and requirement fit
 
 ### Okaish option

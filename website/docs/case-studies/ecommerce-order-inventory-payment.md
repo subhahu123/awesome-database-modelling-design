@@ -93,6 +93,41 @@ Think in **query shapes**, not entities alone. Entity-first modelling without qu
 - `order_items.variant_id` -> `product_variants.variant_id`
 - `payments.order_id` -> `orders.order_id`
 
+
+## Visual understanding (auto-generated)
+
+### ER relationship diagram
+
+```mermaid
+erDiagram
+  INVENTORY_RESERVATIONS }o--|| PRODUCT_VARIANTS : references
+  ORDERS }o--|| USERS : references
+  ORDER_ITEMS }o--|| ORDERS : references
+  ORDER_ITEMS }o--|| PRODUCT_VARIANTS : references
+  PAYMENTS }o--|| ORDERS : references
+```
+
+### Write lifecycle flow
+
+```mermaid
+flowchart LR
+  A[API Request] --> B[Validate Input]
+  B --> C[Open Transaction]
+  C --> D[Write/Update Core Tables]
+  D --> E[Append History or Audit]
+  E --> F[Commit]
+  F --> G[Read Model / API Response]
+```
+
+### Query/index execution view
+
+```mermaid
+flowchart TD
+  Q[Read Query] --> I[(Composite Index)]
+  I --> P[Page/Sort Result]
+  P --> R[Low-latency Response]
+```
+
 ## Approach the solution and requirement fit
 
 ### Okaish option

@@ -94,6 +94,40 @@ Think in **query shapes**, not entities alone. Entity-first modelling without qu
 - `record_status_history.record_id` -> `primary_records.record_id`
 - `idempotency_keys.user_id` -> `users.user_id`
 
+
+## Visual understanding (auto-generated)
+
+### ER relationship diagram
+
+```mermaid
+erDiagram
+  PRIMARY_RECORDS }o--|| USERS : references
+  RECORD_ITEMS }o--|| PRIMARY_RECORDS : references
+  RECORD_STATUS_HISTORY }o--|| PRIMARY_RECORDS : references
+  IDEMPOTENCY_KEYS }o--|| USERS : references
+```
+
+### Write lifecycle flow
+
+```mermaid
+flowchart LR
+  A[API Request] --> B[Validate Input]
+  B --> C[Open Transaction]
+  C --> D[Write/Update Core Tables]
+  D --> E[Append History or Audit]
+  E --> F[Commit]
+  F --> G[Read Model / API Response]
+```
+
+### Query/index execution view
+
+```mermaid
+flowchart TD
+  Q[Read Query] --> I[(Composite Index)]
+  I --> P[Page/Sort Result]
+  P --> R[Low-latency Response]
+```
+
 ## Approach the solution and requirement fit
 
 ### Okaish option

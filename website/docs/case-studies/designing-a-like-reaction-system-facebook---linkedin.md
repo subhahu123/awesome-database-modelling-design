@@ -106,6 +106,42 @@ Think in **query shapes**, not entities alone. Entity-first modelling without qu
 - `FeedReactionSnapshot.ReactionSnapshot_id` -> `ReactionSnapshot.id` (expected FK pattern)
 - `ReactionCounterCRDT.FeedReactionSnapshot_id` -> `FeedReactionSnapshot.id` (expected FK pattern)
 
+
+## Visual understanding (auto-generated)
+
+### ER relationship diagram
+
+```mermaid
+erDiagram
+  REACTIONCOUNTER }o--|| REACTION : references
+  REACTIONEVENT }o--|| REACTIONCOUNTER : references
+  REACTIONLOG }o--|| REACTIONEVENT : references
+  REACTIONSNAPSHOT }o--|| REACTIONLOG : references
+  FEEDREACTIONSNAPSHOT }o--|| REACTIONSNAPSHOT : references
+  REACTIONCOUNTERCRDT }o--|| FEEDREACTIONSNAPSHOT : references
+```
+
+### Write lifecycle flow
+
+```mermaid
+flowchart LR
+  A[API Request] --> B[Validate Input]
+  B --> C[Open Transaction]
+  C --> D[Write/Update Core Tables]
+  D --> E[Append History or Audit]
+  E --> F[Commit]
+  F --> G[Read Model / API Response]
+```
+
+### Query/index execution view
+
+```mermaid
+flowchart TD
+  Q[Read Query] --> I[(Composite Index)]
+  I --> P[Page/Sort Result]
+  P --> R[Low-latency Response]
+```
+
 ## Approach the solution and requirement fit
 
 ### Okaish option
