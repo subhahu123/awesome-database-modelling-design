@@ -1,8 +1,8 @@
-# Messaging / Chat Application Database Modelling
+# Audit Log & Compliance Database Modelling
 
 ## 1) Problem statement
 
-Design a production-grade schema for **Messaging / Chat Application** with:
+Design a production-grade schema for **Audit Log & Compliance** with:
 
 - correct relational constraints
 - query-oriented indexes

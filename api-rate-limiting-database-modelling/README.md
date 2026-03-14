@@ -1,8 +1,8 @@
-# Messaging / Chat Application Database Modelling
+# API Rate Limiting Database Modelling
 
 ## 1) Problem statement
 
-Design a production-grade schema for **Messaging / Chat Application** with:
+Design a production-grade schema for **API Rate Limiting** with:
 
 - correct relational constraints
 - query-oriented indexes

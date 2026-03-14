@@ -1,8 +1,8 @@
-# Messaging / Chat Application Database Modelling
+# Ad Tech Real-Time Bidding Database Modelling
 
 ## 1) Problem statement
 
-Design a production-grade schema for **Messaging / Chat Application** with:
+Design a production-grade schema for **Ad Tech Real-Time Bidding** with:
 
 - correct relational constraints
 - query-oriented indexes

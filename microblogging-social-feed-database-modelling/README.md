@@ -1,8 +1,8 @@
-# Messaging / Chat Application Database Modelling
+# Microblogging Social Feed Database Modelling
 
 ## 1) Problem statement
 
-Design a production-grade schema for **Messaging / Chat Application** with:
+Design a production-grade schema for **Microblogging Social Feed** with:
 
 - correct relational constraints
 - query-oriented indexes

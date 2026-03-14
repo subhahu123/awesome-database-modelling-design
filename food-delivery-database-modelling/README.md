@@ -1,8 +1,8 @@
-# Messaging / Chat Application Database Modelling
+# Food Delivery (Swiggy/Zomato/UberEats style) Database Modelling
 
 ## 1) Problem statement
 
-Design a production-grade schema for **Messaging / Chat Application** with:
+Design a production-grade schema for **Food Delivery (Swiggy/Zomato/UberEats style)** with:
 
 - correct relational constraints
 - query-oriented indexes

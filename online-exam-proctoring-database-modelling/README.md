@@ -1,8 +1,8 @@
-# Messaging / Chat Application Database Modelling
+# Online Exam & Proctoring Database Modelling
 
 ## 1) Problem statement
 
-Design a production-grade schema for **Messaging / Chat Application** with:
+Design a production-grade schema for **Online Exam & Proctoring** with:
 
 - correct relational constraints
 - query-oriented indexes
