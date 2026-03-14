@@ -73,3 +73,58 @@ html[data-theme='dark'] {
 .footer {
   border-top: 1px solid rgb(255 161 22 / 0.24);
 }
+
+/* Animate Mermaid diagrams on case-study docs for easier visual tracing */
+[class*='docs-doc-id-case-studies-'] .mermaid svg .edgePath path {
+  stroke-dasharray: 8;
+  animation: case-study-flow 6s linear infinite;
+}
+
+[class*='docs-doc-id-case-studies-'] .mermaid svg .node rect,
+[class*='docs-doc-id-case-studies-'] .mermaid svg .node circle,
+[class*='docs-doc-id-case-studies-'] .mermaid svg .node polygon,
+[class*='docs-doc-id-case-studies-'] .mermaid svg .node path {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: case-study-pulse 3.2s ease-in-out infinite;
+}
+
+[class*='docs-doc-id-case-studies-'] .mermaid svg .node:nth-of-type(2n) rect,
+[class*='docs-doc-id-case-studies-'] .mermaid svg .node:nth-of-type(2n) circle,
+[class*='docs-doc-id-case-studies-'] .mermaid svg .node:nth-of-type(2n) polygon,
+[class*='docs-doc-id-case-studies-'] .mermaid svg .node:nth-of-type(2n) path {
+  animation-delay: 0.8s;
+}
+
+@keyframes case-study-flow {
+  from {
+    stroke-dashoffset: 0;
+  }
+
+  to {
+    stroke-dashoffset: -80;
+  }
+}
+
+@keyframes case-study-pulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 rgb(255 161 22 / 0.12));
+    transform: scale(1);
+  }
+
+  50% {
+    filter: drop-shadow(0 0 7px rgb(255 161 22 / 0.42));
+    transform: scale(1.013);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [class*='docs-doc-id-case-studies-'] .mermaid svg .edgePath path,
+  [class*='docs-doc-id-case-studies-'] .mermaid svg .node rect,
+  [class*='docs-doc-id-case-studies-'] .mermaid svg .node circle,
+  [class*='docs-doc-id-case-studies-'] .mermaid svg .node polygon,
+  [class*='docs-doc-id-case-studies-'] .mermaid svg .node path {
+    animation: none;
+  }
+}
