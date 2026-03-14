@@ -171,7 +171,7 @@ Use **Best** only where workload justifies complexity. Over-engineering early ca
 
 ## Interactive solution sandbox
 
-Start with **Okaish / Good / Best** from this case study, then tweak simple sliders to see how your design decisions change outcomes.
+Start with **Okaish / Good / Best** from this case study, then tweak simple choices (Basic/Decent/Strong) to see how your design decisions change outcomes.
 
 <CaseStudyPlayground caseSlug="insurance-policy-claims-database-modelling" />
 
