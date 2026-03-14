@@ -18,6 +18,72 @@ Design a production-grade schema for **Audit Log & Compliance** with:
 
 ---
 
+## Visual table schema (auto-generated)
+
+### `users`
+
+| Column | Type | Nullable | Default | Key |
+|---|---|---|---|---|
+| `user_id` | `BIGINT` | NO | `` | `PK` |
+| `name` | `VARCHAR(120)` | NO | `` | `` |
+| `email` | `VARCHAR(255)` | YES | `` | `UQ` |
+| `created_at` | `TIMESTAMP` | NO | `CURRENT_TIMESTAMP` | `` |
+
+### `primary_records`
+
+| Column | Type | Nullable | Default | Key |
+|---|---|---|---|---|
+| `record_id` | `BIGINT` | NO | `` | `PK` |
+| `user_id` | `BIGINT` | NO | `` | `FK` |
+| `status` | `VARCHAR(30)` | NO | `` | `` |
+| `total_cents` | `BIGINT` | NO | `0` | `` |
+| `created_at` | `TIMESTAMP` | NO | `CURRENT_TIMESTAMP` | `` |
+
+### `record_items`
+
+| Column | Type | Nullable | Default | Key |
+|---|---|---|---|---|
+| `item_id` | `BIGINT` | NO | `` | `PK` |
+| `record_id` | `BIGINT` | NO | `` | `FK` |
+| `item_name` | `VARCHAR(255)` | NO | `` | `` |
+| `quantity` | `INT` | NO | `1` | `` |
+| `amount_cents` | `BIGINT` | NO | `0` | `` |
+
+### `record_status_history`
+
+| Column | Type | Nullable | Default | Key |
+|---|---|---|---|---|
+| `record_id` | `BIGINT` | NO | `` | `PK|FK` |
+| `sequence_no` | `INT` | NO | `` | `PK` |
+| `from_status` | `VARCHAR(30)` | YES | `` | `` |
+| `to_status` | `VARCHAR(30)` | NO | `` | `` |
+| `changed_by` | `BIGINT` | YES | `` | `` |
+| `changed_at` | `TIMESTAMP` | NO | `CURRENT_TIMESTAMP` | `` |
+
+### `idempotency_keys`
+
+| Column | Type | Nullable | Default | Key |
+|---|---|---|---|---|
+| `idempotency_key` | `VARCHAR(100)` | NO | `` | `PK` |
+| `user_id` | `BIGINT` | NO | `` | `FK` |
+| `request_hash` | `VARCHAR(128)` | NO | `` | `` |
+| `response_ref` | `VARCHAR(100)` | YES | `` | `` |
+| `created_at` | `TIMESTAMP` | NO | `CURRENT_TIMESTAMP` | `` |
+| `expires_at` | `TIMESTAMP` | YES | `` | `` |
+
+### `audit_logs`
+
+| Column | Type | Nullable | Default | Key |
+|---|---|---|---|---|
+| `audit_id` | `BIGINT` | NO | `` | `PK` |
+| `entity_type` | `VARCHAR(40)` | NO | `` | `` |
+| `entity_id` | `BIGINT` | NO | `` | `` |
+| `actor_id` | `BIGINT` | YES | `` | `` |
+| `action` | `VARCHAR(40)` | NO | `` | `` |
+| `source` | `VARCHAR(40)` | YES | `` | `` |
+| `created_at` | `TIMESTAMP` | NO | `CURRENT_TIMESTAMP` | `` |
+
+
 ## 2) Basic solution (v1)
 
 A minimal starting model teams typically build first.

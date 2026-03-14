@@ -177,3 +177,128 @@ CREATE TABLE ReactionCounterCRDT (
     PRIMARY KEY (entity_id, reaction_type, region)
 );
 ```
+
+
+## Visual table schema (auto-generated)
+
+### `Reaction`
+
+| Column | Type | Nullable | Default | Key |
+|---|---|---|---|---|
+| `user_id` | `BIGINT` | NO | `` | `PK` |
+| `entity_id` | `BIGINT` | NO | `` | `PK` |
+| `entity_type` | `VARCHAR(20)` | NO | `` | `PK` |
+| `reaction_type` | `VARCHAR(20)` | NO | `` | `` |
+| `created_at` | `DATETIME` | YES | `` | `` |
+
+### `ReactionCounter`
+
+| Column | Type | Nullable | Default | Key |
+|---|---|---|---|---|
+| `entity_id` | `BIGINT` | NO | `` | `PK` |
+| `entity_type` | `VARCHAR(20)` | NO | `` | `PK` |
+| `reaction_type` | `VARCHAR(20)` | NO | `` | `PK` |
+| `count` | `BIGINT` | NO | `` | `` |
+
+### `Reaction`
+
+| Column | Type | Nullable | Default | Key |
+|---|---|---|---|---|
+| `user_id` | `BIGINT` | YES | `` | `PK` |
+| `entity_id` | `BIGINT` | YES | `` | `PK` |
+| `entity_type` | `VARCHAR(20)` | YES | `` | `PK` |
+| `reaction_type` | `VARCHAR(20)` | YES | `` | `` |
+| `updated_at` | `DATETIME` | YES | `` | `` |
+
+### `ReactionEvent`
+
+| Column | Type | Nullable | Default | Key |
+|---|---|---|---|---|
+| `event_id` | `BIGINT` | NO | `` | `PK` |
+| `user_id` | `BIGINT` | YES | `` | `` |
+| `entity_id` | `BIGINT` | YES | `` | `` |
+| `entity_type` | `VARCHAR(20)` | YES | `` | `` |
+| `old_reaction` | `VARCHAR(20)` | YES | `` | `` |
+| `new_reaction` | `VARCHAR(20)` | YES | `` | `` |
+| `created_at` | `DATETIME` | YES | `` | `` |
+
+### `ReactionCounter`
+
+| Column | Type | Nullable | Default | Key |
+|---|---|---|---|---|
+| `entity_id` | `BIGINT` | YES | `` | `PK` |
+| `entity_type` | `VARCHAR(20)` | YES | `` | `PK` |
+| `reaction_type` | `VARCHAR(20)` | YES | `` | `PK` |
+| `count` | `BIGINT` | YES | `` | `` |
+
+### `ReactionLog`
+
+| Column | Type | Nullable | Default | Key |
+|---|---|---|---|---|
+| `event_id` | `BIGINT` | NO | `` | `PK` |
+| `user_id` | `BIGINT` | YES | `` | `` |
+| `entity_id` | `BIGINT` | YES | `` | `` |
+| `entity_type` | `VARCHAR(20)` | YES | `` | `` |
+| `reaction_type` | `VARCHAR(20)` | YES | `` | `` |
+| `created_at` | `DATETIME` | YES | `` | `` |
+
+### `ReactionSnapshot`
+
+| Column | Type | Nullable | Default | Key |
+|---|---|---|---|---|
+| `user_id` | `BIGINT` | YES | `` | `PK` |
+| `entity_id` | `BIGINT` | YES | `` | `PK` |
+| `entity_type` | `VARCHAR(20)` | YES | `` | `PK` |
+| `reaction_type` | `VARCHAR(20)` | YES | `` | `` |
+
+### `ReactionCounter`
+
+| Column | Type | Nullable | Default | Key |
+|---|---|---|---|---|
+| `entity_id` | `BIGINT` | YES | `` | `PK` |
+| `entity_type` | `VARCHAR(20)` | YES | `` | `PK` |
+| `reaction_type` | `VARCHAR(20)` | YES | `` | `PK` |
+| `count` | `BIGINT` | YES | `` | `` |
+
+### `Reaction`
+
+| Column | Type | Nullable | Default | Key |
+|---|---|---|---|---|
+| `user_id` | `BIGINT` | YES | `` | `PK` |
+| `entity_id` | `BIGINT` | YES | `` | `PK` |
+| `reaction_type` | `VARCHAR(20)` | YES | `` | `` |
+
+### `FeedReactionSnapshot`
+
+| Column | Type | Nullable | Default | Key |
+|---|---|---|---|---|
+| `entity_id` | `BIGINT` | NO | `` | `PK` |
+| `like_count` | `BIGINT` | YES | `` | `` |
+| `love_count` | `BIGINT` | YES | `` | `` |
+| `laugh_count` | `BIGINT` | YES | `` | `` |
+
+### `Reaction`
+
+| Column | Type | Nullable | Default | Key |
+|---|---|---|---|---|
+| `user_id` | `BIGINT` | YES | `` | `` |
+| `entity_id` | `BIGINT` | YES | `` | `` |
+| `reaction_type` | `VARCHAR(20)` | YES | `` | `` |
+
+### `Reaction`
+
+| Column | Type | Nullable | Default | Key |
+|---|---|---|---|---|
+| `user_id` | `BIGINT` | YES | `` | `` |
+| `entity_id` | `BIGINT` | YES | `` | `` |
+| `reaction_type` | `VARCHAR(20)` | YES | `` | `` |
+| `region` | `VARCHAR(20)` | YES | `` | `` |
+
+### `ReactionCounterCRDT`
+
+| Column | Type | Nullable | Default | Key |
+|---|---|---|---|---|
+| `entity_id` | `BIGINT` | YES | `` | `PK` |
+| `reaction_type` | `VARCHAR(20)` | YES | `` | `PK` |
+| `region` | `VARCHAR(20)` | YES | `` | `PK` |
+| `count` | `BIGINT` | YES | `` | `` |

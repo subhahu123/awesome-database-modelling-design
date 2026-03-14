@@ -16,6 +16,78 @@ slug: /case-studies/ecommerce-order-inventory-payment
 - `orders`, `order_items`
 - `payments`, `payment_events`
 
+## Visual table schema (auto-generated)
+
+### `users`
+
+| Column | Type | Nullable | Default | Key |
+|---|---|---|---|---|
+| `user_id` | `BIGINT` | NO | `` | `PK` |
+| `email` | `VARCHAR(255)` | NO | `` | `UQ` |
+| `created_at` | `TIMESTAMP` | NO | `CURRENT_TIMESTAMP` | `` |
+
+### `product_variants`
+
+| Column | Type | Nullable | Default | Key |
+|---|---|---|---|---|
+| `variant_id` | `BIGINT` | NO | `` | `PK` |
+| `product_id` | `BIGINT` | NO | `` | `` |
+| `sku` | `VARCHAR(64)` | NO | `` | `UQ` |
+| `price_cents` | `BIGINT` | NO | `` | `` |
+| `currency` | `CHAR(3)` | NO | `` | `` |
+| `is_active` | `BOOLEAN` | NO | `TRUE` | `` |
+| `created_at` | `TIMESTAMP` | NO | `CURRENT_TIMESTAMP` | `` |
+
+### `inventory_reservations`
+
+| Column | Type | Nullable | Default | Key |
+|---|---|---|---|---|
+| `reservation_id` | `BIGINT` | NO | `` | `PK` |
+| `variant_id` | `BIGINT` | NO | `` | `FK` |
+| `order_id` | `BIGINT` | YES | `` | `` |
+| `quantity` | `INT` | NO | `` | `` |
+| `status` | `VARCHAR(20)` | NO | `` | `` |
+| `--` | `RESERVED` | YES | `` | `` |
+| `created_at` | `TIMESTAMP` | NO | `CURRENT_TIMESTAMP` | `` |
+
+### `orders`
+
+| Column | Type | Nullable | Default | Key |
+|---|---|---|---|---|
+| `order_id` | `BIGINT` | NO | `` | `PK` |
+| `user_id` | `BIGINT` | NO | `` | `FK` |
+| `status` | `VARCHAR(20)` | NO | `` | `` |
+| `--` | `PENDING` | NO | `` | `` |
+| `tax_cents` | `BIGINT` | NO | `` | `` |
+| `shipping_cents` | `BIGINT` | NO | `` | `` |
+| `total_cents` | `BIGINT` | NO | `` | `` |
+| `created_at` | `TIMESTAMP` | NO | `CURRENT_TIMESTAMP` | `` |
+
+### `order_items`
+
+| Column | Type | Nullable | Default | Key |
+|---|---|---|---|---|
+| `order_item_id` | `BIGINT` | NO | `` | `PK` |
+| `order_id` | `BIGINT` | NO | `` | `FK` |
+| `variant_id` | `BIGINT` | NO | `` | `FK` |
+| `quantity` | `INT` | NO | `` | `` |
+| `unit_price_cents` | `BIGINT` | NO | `` | `` |
+
+### `payments`
+
+| Column | Type | Nullable | Default | Key |
+|---|---|---|---|---|
+| `payment_id` | `BIGINT` | NO | `` | `PK` |
+| `order_id` | `BIGINT` | NO | `` | `FK` |
+| `provider` | `VARCHAR(30)` | NO | `` | `` |
+| `provider_ref` | `VARCHAR(255)` | YES | `` | `UQ` |
+| `amount_cents` | `BIGINT` | NO | `` | `` |
+| `currency` | `CHAR(3)` | NO | `` | `` |
+| `status` | `VARCHAR(20)` | NO | `` | `` |
+| `--` | `INITIATED` | NO | `` | `UQ` |
+| `created_at` | `TIMESTAMP` | NO | `CURRENT_TIMESTAMP` | `` |
+
+
 ## 2) Reference schema (MySQL/PostgreSQL-friendly)
 
 ```sql
