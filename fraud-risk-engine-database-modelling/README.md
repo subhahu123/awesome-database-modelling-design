@@ -1,8 +1,8 @@
-# Messaging / Chat Application Database Modelling
+# Fraud Risk Engine Database Modelling
 
 ## 1) Problem statement
 
-Design a production-grade schema for **Messaging / Chat Application** with:
+Design a production-grade schema for **Fraud Risk Engine** with:
 
 - correct relational constraints
 - query-oriented indexes

@@ -1,8 +1,8 @@
-# Messaging / Chat Application Database Modelling
+# Knowledge Base / Wiki Database Modelling
 
 ## 1) Problem statement
 
-Design a production-grade schema for **Messaging / Chat Application** with:
+Design a production-grade schema for **Knowledge Base / Wiki** with:
 
 - correct relational constraints
 - query-oriented indexes

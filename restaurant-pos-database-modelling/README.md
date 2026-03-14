@@ -1,8 +1,8 @@
-# Messaging / Chat Application Database Modelling
+# Restaurant POS Database Modelling
 
 ## 1) Problem statement
 
-Design a production-grade schema for **Messaging / Chat Application** with:
+Design a production-grade schema for **Restaurant POS** with:
 
 - correct relational constraints
 - query-oriented indexes

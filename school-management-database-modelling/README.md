@@ -1,8 +1,8 @@
-# Messaging / Chat Application Database Modelling
+# School Management Database Modelling
 
 ## 1) Problem statement
 
-Design a production-grade schema for **Messaging / Chat Application** with:
+Design a production-grade schema for **School Management** with:
 
 - correct relational constraints
 - query-oriented indexes

@@ -1,8 +1,8 @@
-# Messaging / Chat Application Database Modelling
+# Doctor Appointment Database Modelling
 
 ## 1) Problem statement
 
-Design a production-grade schema for **Messaging / Chat Application** with:
+Design a production-grade schema for **Doctor Appointment** with:
 
 - correct relational constraints
 - query-oriented indexes

@@ -1,8 +1,8 @@
-# Messaging / Chat Application Database Modelling
+# Customer Support Helpdesk Database Modelling
 
 ## 1) Problem statement
 
-Design a production-grade schema for **Messaging / Chat Application** with:
+Design a production-grade schema for **Customer Support Helpdesk** with:
 
 - correct relational constraints
 - query-oriented indexes

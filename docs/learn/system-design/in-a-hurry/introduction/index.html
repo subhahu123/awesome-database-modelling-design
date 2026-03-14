@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Introduction - DB Modelling Learn</title>
+  <link rel="stylesheet" href="../../../../styles.css" />
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="../../../../index.html">DB Modelling Learn</a>
+      <a href="../introduction/">Introduction</a>
+      <a href="../schema-evolution/">Schema evolution</a>
+      <a href="../indexing-strategy/">Indexing strategy</a>
+    </div>
+  </nav>
+
+  <main class="container">
+    <article>
+      <span class="pill">System-design in a hurry</span>
+      <h1>Introduction to database modelling (in a hurry)</h1>
+      <p>
+        Database modelling is about encoding <strong>business truth</strong> using tables, constraints,
+        and indexes so your system remains correct under real traffic.
+      </p>
+
+      <h2>The 20-minute framework</h2>
+      <ol>
+        <li><strong>List core entities</strong> from product flows (user, order, payment, message, etc.).</li>
+        <li><strong>Write invariants</strong> as DB constraints where possible.</li>
+        <li><strong>Map top 5 reads + writes</strong> and create indexes for those first.</li>
+        <li><strong>Add history</strong> for status transitions and auditing.</li>
+        <li><strong>Plan migrations</strong> before scaling features.</li>
+      </ol>
+
+      <blockquote>
+        If a business rule matters, encode it in the schema—not only in application code.
+      </blockquote>
+
+      <h2>Common beginner mistakes</h2>
+      <ul>
+        <li>Using only surrogate IDs and forgetting <span class="kbd">UNIQUE</span> constraints for natural keys.</li>
+        <li>Adding indexes without tying them to real query shapes.</li>
+        <li>Keeping only current state and losing lifecycle transitions.</li>
+        <li>Skipping idempotency for payment/order APIs.</li>
+      </ul>
+
+      <h2>What to read next</h2>
+      <ul>
+        <li><a href="../schema-evolution/">Schema evolution</a> — turn weak v1 schemas into robust v2 designs.</li>
+        <li><a href="../indexing-strategy/">Indexing strategy</a> — query-first indexing and anti-pattern fixes.</li>
+      </ul>
+    </article>
+  </main>
+</body>
+</html>

@@ -1,8 +1,8 @@
-# Messaging / Chat Application Database Modelling
+# Hotel Management Database Modelling
 
 ## 1) Problem statement
 
-Design a production-grade schema for **Messaging / Chat Application** with:
+Design a production-grade schema for **Hotel Management** with:
 
 - correct relational constraints
 - query-oriented indexes

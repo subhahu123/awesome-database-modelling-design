@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Schema Evolution - DB Modelling Learn</title>
+  <link rel="stylesheet" href="../../../../styles.css" />
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="../../../../index.html">DB Modelling Learn</a>
+      <a href="../introduction/">Introduction</a>
+      <a href="../schema-evolution/">Schema evolution</a>
+      <a href="../indexing-strategy/">Indexing strategy</a>
+    </div>
+  </nav>
+
+  <main class="container">
+    <article>
+      <span class="pill">System-design in a hurry</span>
+      <h1>Schema evolution: from v1 to v2</h1>
+      <p>
+        Most systems start with a minimal v1. Quality comes from identifying failure modes and evolving safely.
+      </p>
+
+      <h2>Basic v1 pattern</h2>
+      <ul>
+        <li>A single table with a mutable <span class="kbd">status</span>.</li>
+        <li>Few constraints, no append-only history.</li>
+        <li>Works for demos; brittle in production.</li>
+      </ul>
+
+      <h2>Question the design</h2>
+      <ol>
+        <li>Can retries create duplicates?</li>
+        <li>Can we reconstruct who changed status and when?</li>
+        <li>Can we support tenant-level isolation/compliance?</li>
+        <li>Can we backfill or roll back safely during migrations?</li>
+      </ol>
+
+      <h2>Improve to v2</h2>
+      <ul>
+        <li>Add <span class="kbd">record_status_history</span> for lifecycle transitions.</li>
+        <li>Add <span class="kbd">idempotency_keys</span> for retry-safe APIs.</li>
+        <li>Add <span class="kbd">audit_logs</span> for actor/source tracking.</li>
+        <li>Introduce read models for dashboard-heavy workloads.</li>
+      </ul>
+
+      <h2>Safe migration playbook</h2>
+      <ol>
+        <li>Schema expand: add nullable/new tables first.</li>
+        <li>Dual-write from application.</li>
+        <li>Backfill old records in batches.</li>
+        <li>Switch reads to new model.</li>
+        <li>Remove old fields in a later release.</li>
+      </ol>
+    </article>
+  </main>
+</body>
+</html>
