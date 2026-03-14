@@ -44,9 +44,9 @@ const config = {
     },
     announcementBar: {
       id: 'branding-refresh',
-      content: '🟣🟠 Refreshed branding: LLDCoding-inspired Indigo + Orange for tech professionals.',
-      backgroundColor: '#1e1a42',
-      textColor: '#fff1e8',
+      content: '🟣🟠 New professional theme: inspired by code.lldcoding.com (indigo + orange).',
+      backgroundColor: '#1a1f3a',
+      textColor: '#ffe8d7',
       isCloseable: true,
     },
     navbar: {
