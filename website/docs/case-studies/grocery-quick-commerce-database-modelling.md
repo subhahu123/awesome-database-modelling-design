@@ -7,218 +7,158 @@ slug: /case-studies/grocery-quick-commerce-database-modelling
 
 # Grocery Quick Commerce Database Modelling
 
-## 1) Problem statement
+## Functional Requirement
 
-Design a production-grade schema for **Grocery Quick Commerce** with:
+- Create and update core domain records reliably.
+- Fetch fast read APIs for dashboard, detail, and list views.
+- Track lifecycle transitions (draft/active/completed/cancelled style states).
+- Support retries safely without duplicate business effects.
+- Enable operational visibility (audit, timeline, troubleshooting).
 
-- correct relational constraints
-- query-oriented indexes
-- auditable state transitions
-- a clear migration path from v1 to v2
+## Non-Functional Requirement
 
----
+- **Correctness first:** constraints enforce key business invariants.
+- **Performance:** p95 reads should stay low for hot paths using query-driven indexes.
+- **Scalability:** support growth from early stage to high-scale partitioned workloads.
+- **Availability:** isolate write failures and keep read APIs resilient.
+- **Auditability:** retain history and actor/source metadata for compliance.
 
-## Visual table schema (auto-generated)
+:::info Fun fact 1
+Most production incidents in CRUD-heavy systems are caused by **state transition ambiguity** (missing history), not by missing tables.
+:::
 
-### `users`
+:::info Fun fact 2
+A single well-designed composite index can replace 3–5 naive indexes and significantly reduce write amplification.
+:::
 
-| Column | Type | Nullable | Default | Key |
-|---|---|---|---|---|
-| `user_id` | `BIGINT` | NO | `` | `PK` |
-| `name` | `VARCHAR(120)` | NO | `` | `` |
-| `email` | `VARCHAR(255)` | YES | `` | `UQ` |
-| `created_at` | `TIMESTAMP` | NO | `CURRENT_TIMESTAMP` | `` |
+## Thinking or strategy to approach this problem
 
-### `primary_records`
+1. Start with the top 5 API calls (2–3 writes, 2–3 reads).
+2. Model source-of-truth tables around transaction boundaries.
+3. Add append-only history for state transitions and replayability.
+4. Add idempotency and audit trails before scale amplifies mistakes.
+5. Add denormalized read models only where latency or cost justifies them.
 
-| Column | Type | Nullable | Default | Key |
-|---|---|---|---|---|
-| `record_id` | `BIGINT` | NO | `` | `PK` |
-| `user_id` | `BIGINT` | NO | `` | `FK` |
-| `status` | `VARCHAR(30)` | NO | `` | `` |
-| `total_cents` | `BIGINT` | NO | `0` | `` |
-| `created_at` | `TIMESTAMP` | NO | `CURRENT_TIMESTAMP` | `` |
+:::note
+Think in **query shapes**, not entities alone. Entity-first modelling without query analysis almost always creates index debt.
+:::
 
-### `record_items`
-
-| Column | Type | Nullable | Default | Key |
-|---|---|---|---|---|
-| `item_id` | `BIGINT` | NO | `` | `PK` |
-| `record_id` | `BIGINT` | NO | `` | `FK` |
-| `item_name` | `VARCHAR(255)` | NO | `` | `` |
-| `quantity` | `INT` | NO | `1` | `` |
-| `amount_cents` | `BIGINT` | NO | `0` | `` |
-
-### `record_status_history`
-
-| Column | Type | Nullable | Default | Key |
-|---|---|---|---|---|
-| `record_id` | `BIGINT` | NO | `` | `PK|FK` |
-| `sequence_no` | `INT` | NO | `` | `PK` |
-| `from_status` | `VARCHAR(30)` | YES | `` | `` |
-| `to_status` | `VARCHAR(30)` | NO | `` | `` |
-| `changed_by` | `BIGINT` | YES | `` | `` |
-| `changed_at` | `TIMESTAMP` | NO | `CURRENT_TIMESTAMP` | `` |
-
-### `idempotency_keys`
-
-| Column | Type | Nullable | Default | Key |
-|---|---|---|---|---|
-| `idempotency_key` | `VARCHAR(100)` | NO | `` | `PK` |
-| `user_id` | `BIGINT` | NO | `` | `FK` |
-| `request_hash` | `VARCHAR(128)` | NO | `` | `` |
-| `response_ref` | `VARCHAR(100)` | YES | `` | `` |
-| `created_at` | `TIMESTAMP` | NO | `CURRENT_TIMESTAMP` | `` |
-| `expires_at` | `TIMESTAMP` | YES | `` | `` |
-
-### `audit_logs`
-
-| Column | Type | Nullable | Default | Key |
-|---|---|---|---|---|
-| `audit_id` | `BIGINT` | NO | `` | `PK` |
-| `entity_type` | `VARCHAR(40)` | NO | `` | `` |
-| `entity_id` | `BIGINT` | NO | `` | `` |
-| `actor_id` | `BIGINT` | YES | `` | `` |
-| `action` | `VARCHAR(40)` | NO | `` | `` |
-| `source` | `VARCHAR(40)` | YES | `` | `` |
-| `created_at` | `TIMESTAMP` | NO | `CURRENT_TIMESTAMP` | `` |
-
-
-## 2) Basic solution (v1)
-
-A minimal starting model teams typically build first.
-
-### Core entities (v1)
+## Core enttiles
 
 - `users`
 - `primary_records`
 - `record_items`
 
-### Starter schema (v1)
+## All tables and their relatoinship..
 
-```sql
-CREATE TABLE users (
-  user_id BIGINT PRIMARY KEY,
-  name VARCHAR(120) NOT NULL,
-  email VARCHAR(255) UNIQUE,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+### `users`
 
-CREATE TABLE primary_records (
-  record_id BIGINT PRIMARY KEY,
-  user_id BIGINT NOT NULL,
-  status VARCHAR(30) NOT NULL,
-  total_cents BIGINT NOT NULL DEFAULT 0,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(user_id)
-);
+- Purpose: stores **users** state.
+- Key columns: `user_id`, `name`, `email`, `created_at`.
+- Suggested write invariants: PK uniqueness, FK integrity, `NOT NULL` on required fields.
 
-CREATE TABLE record_items (
-  item_id BIGINT PRIMARY KEY,
-  record_id BIGINT NOT NULL,
-  item_name VARCHAR(255) NOT NULL,
-  quantity INT NOT NULL DEFAULT 1,
-  amount_cents BIGINT NOT NULL DEFAULT 0,
-  FOREIGN KEY (record_id) REFERENCES primary_records(record_id)
-);
-```
+### `primary_records`
 
-### Useful v1 indexes
+- Purpose: stores **primary records** state.
+- Key columns: `record_id`, `user_id`, `status`, `total_cents`, `created_at`.
+- Suggested write invariants: PK uniqueness, FK integrity, `NOT NULL` on required fields.
 
-```sql
-CREATE INDEX idx_primary_records_user_created
-  ON primary_records(user_id, created_at DESC);
+### `record_items`
 
-CREATE INDEX idx_record_items_record
-  ON record_items(record_id);
-```
+- Purpose: stores **record items** state.
+- Key columns: `item_id`, `record_id`, `item_name`, `quantity`, `amount_cents`.
+- Suggested write invariants: PK uniqueness, FK integrity, `NOT NULL` on required fields.
 
----
+### `record_status_history`
 
-## 3) Design choices to question (what breaks in v1)
+- Purpose: stores **record status history** state.
+- Key columns: `record_id`, `sequence_no`, `from_status`, `to_status`, `changed_by`, `changed_at`.
+- Suggested write invariants: PK uniqueness, FK integrity, `NOT NULL` on required fields.
 
-Typical problems in the basic design:
+### `idempotency_keys`
 
-1. **No lifecycle history**: only current `status` is stored; transitions are not auditable.
-2. **Weak idempotency**: retried external writes can create duplicates.
-3. **No tenant boundary**: hard to isolate enterprise customers or regional data.
-4. **Limited compliance traceability**: actor/source metadata is missing.
-5. **Read/write coupling**: dashboards and transactional writes fight over same tables.
+- Purpose: stores **idempotency keys** state.
+- Key columns: `idempotency_key`, `user_id`, `request_hash`, `response_ref`, `created_at`, `expires_at`.
+- Suggested write invariants: PK uniqueness, FK integrity, `NOT NULL` on required fields.
 
----
+### `audit_logs`
 
-## 4) Improved solution (v2)
+- Purpose: stores **audit logs** state.
+- Key columns: `audit_id`, `entity_type`, `entity_id`, `actor_id`, `action`, `source`, `created_at`.
+- Suggested write invariants: PK uniqueness, FK integrity, `NOT NULL` on required fields.
 
-Upgrade v1 by adding lifecycle history, idempotency, and auditability.
+### Relationship map
 
-### Added entities (v2)
+- `primary_records.user_id` -> `users.user_id`
+- `record_items.record_id` -> `primary_records.record_id`
+- `record_status_history.record_id` -> `primary_records.record_id`
+- `idempotency_keys.user_id` -> `users.user_id`
 
-- `record_status_history` (append-only transitions)
-- `idempotency_keys` (dedupe retried writes)
-- `audit_logs` (actor + action trail)
+## Approach the solution and requirement fit
 
-### Improved schema additions (v2)
+### Okaish option
 
-```sql
-CREATE TABLE record_status_history (
-  record_id BIGINT NOT NULL,
-  sequence_no INT NOT NULL,
-  from_status VARCHAR(30),
-  to_status VARCHAR(30) NOT NULL,
-  changed_by BIGINT,
-  changed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (record_id, sequence_no),
-  FOREIGN KEY (record_id) REFERENCES primary_records(record_id)
-);
+- Keep only core tables and basic indexes.
+- Works for MVP and low throughput.
+- Gaps: weak audit trail, retry duplication risk, poor observability.
 
-CREATE TABLE idempotency_keys (
-  idempotency_key VARCHAR(100) PRIMARY KEY,
-  user_id BIGINT NOT NULL,
-  request_hash VARCHAR(128) NOT NULL,
-  response_ref VARCHAR(100),
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  expires_at TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(user_id)
-);
+### Good option
 
-CREATE TABLE audit_logs (
-  audit_id BIGINT PRIMARY KEY,
-  entity_type VARCHAR(40) NOT NULL,
-  entity_id BIGINT NOT NULL,
-  actor_id BIGINT,
-  action VARCHAR(40) NOT NULL,
-  source VARCHAR(40),
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-```
+- Add lifecycle history + idempotency key table.
+- Add composite indexes for top list/detail reads.
+- Add actor/source metadata for critical mutations.
+- Satisfies most functional + reliability requirements for medium scale.
 
-### Improved indexes (v2)
+### Best option
 
-```sql
-CREATE INDEX idx_primary_records_status_created
-  ON primary_records(status, created_at DESC);
+- Keep immutable event/history trail plus canonical OLTP tables.
+- Use outbox/eventing for async workflows and notification fanout.
+- Build read-optimized projections/materialized views for heavy dashboards.
+- Add partitioning (time/tenant/region) and archival policy.
+- Add SLO-aware observability: slow-query logs, cardinality checks, index hit ratio.
 
-CREATE INDEX idx_status_history_record_time
-  ON record_status_history(record_id, changed_at DESC);
+:::note
+Use **Best** only where workload justifies complexity. Over-engineering early can slow feature velocity.
+:::
 
-CREATE INDEX idx_audit_entity_time
-  ON audit_logs(entity_type, entity_id, created_at DESC);
-```
+## Query execution, scale path, and performance depth
 
----
+### Typical read paths
 
-## 5) Read/write patterns after the fix
+- **Timeline/list query:** filter + sort by recent timestamp (`created_at DESC`) with stable cursor pagination.
+- **Detail query:** point lookup by PK + minimal joins to avoid N+1 patterns.
+- **Operational query:** history/audit lookup for investigations.
 
-- **Write path**: transactionally update `primary_records` + append `record_status_history`.
-- **Retry-safe APIs**: check `idempotency_keys` before creating/updating records.
-- **Operational forensics**: use `audit_logs` for investigations and compliance checks.
-- **Read models**: optionally build denormalized projections for heavy dashboards.
+### Recommended index strategy
 
----
+- `idx_primary_records_user_created` on `primary_records(user_id, created_at DESC)`
+- `idx_record_items_record` on `record_items(record_id)`
+- `idx_primary_records_status_created` on `primary_records(status, created_at DESC)`
+- `idx_status_history_record_time` on `record_status_history(record_id, changed_at DESC)`
+- `idx_audit_entity_time` on `audit_logs(entity_type, entity_id, created_at DESC)`
 
-## 6) Production notes
+### How queries run at different scales
 
-- Keep schema constraints as the source of truth for critical invariants.
-- Prefer append-only history tables for reversible debugging and replay.
-- Use online/backward-compatible migrations (`ADD COLUMN`, dual-write, then cleanup).
-- Partition by tenant/time when volume grows.
+- **< 100K rows/table:** straightforward B-Tree indexes usually enough.
+- **100K–10M rows/table:** composite indexes + careful selectivity become critical.
+- **10M+ rows/table:** partition by time/tenant/region; avoid cross-partition scans.
+- **100M+ events/history:** separate hot vs cold storage, archive old partitions, and precompute heavy aggregates.
+
+### Write path considerations
+
+- Wrap related writes in a single transaction where invariants must hold.
+- Keep transaction scope short to reduce lock contention.
+- Use idempotency keys for retried API calls.
+- For counters/aggregates, prefer async projection updates from outbox/event stream.
+
+### Failure-mode design
+
+- Duplicate requests -> blocked by idempotency constraint.
+- Partial workflow failure -> recovered via event replay/history state.
+- Slow read endpoints -> solved by index review or read model projection.
+- Compliance/audit demand -> satisfied through immutable history + audit tables.
+
+:::info Deep-dive tip
+For each endpoint, document: `expected QPS`, `expected rows scanned`, `target p95`, and `index used`.
+That one table is often enough to predict when a schema needs partitioning.
+:::

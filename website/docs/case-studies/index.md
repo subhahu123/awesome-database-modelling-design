@@ -3,72 +3,124 @@ title: "Case studies"
 slug: /case-studies
 ---
 
+> Source: `N/A`
+
 # Case studies
 
-All repository case studies are now available as Docusaurus docs under this section.
+## Functional Requirement
 
-Total imported case studies: **63**.
+- Create and update core domain records reliably.
+- Fetch fast read APIs for dashboard, detail, and list views.
+- Track lifecycle transitions (draft/active/completed/cancelled style states).
+- Support retries safely without duplicate business effects.
+- Enable operational visibility (audit, timeline, troubleshooting).
 
-- [ad-tech-bidding-database-modelling](./ad-tech-bidding-database-modelling)
-- [airline-reservation-database-modelling](./airline-reservation-database-modelling)
-- [api-rate-limiting-database-modelling](./api-rate-limiting-database-modelling)
-- [audit-log-compliance-database-modelling](./audit-log-compliance-database-modelling)
-- [b2b-crm-database-modelling](./b2b-crm-database-modelling)
-- [b2b-marketplace-database-modelling](./b2b-marketplace-database-modelling)
-- [banking-core-ledger-database-modelling](./banking-core-ledger-database-modelling)
-- [car-rental-database-modelling](./car-rental-database-modelling)
-- [crypto-exchange-database-modelling](./crypto-exchange-database-modelling)
-- [customer-support-helpdesk-database-modelling](./customer-support-helpdesk-database-modelling)
-- [Designing a Like-Reaction System (Facebook - LinkedIn)](./designing-a-like-reaction-system-facebook---linkedin)
-- [digital-library-database-modelling](./digital-library-database-modelling)
-- [doctor-appointment-database-modelling](./doctor-appointment-database-modelling)
-- [donation-crowdfunding-database-modelling](./donation-crowdfunding-database-modelling)
-- [e-learning-live-classes-database-modelling](./e-learning-live-classes-database-modelling)
-- [ecommerce-order-inventory-payment](./ecommerce-order-inventory-payment)
-- [email-delivery-platform-database-modelling](./email-delivery-platform-database-modelling)
-- [event-ticketing-database-modelling](./event-ticketing-database-modelling)
-- [expense-management-database-modelling](./expense-management-database-modelling)
-- [feature-flag-platform-database-modelling](./feature-flag-platform-database-modelling)
-- [fitness-tracking-database-modelling](./fitness-tracking-database-modelling)
-- [food-delivery-database-modelling](./food-delivery-database-modelling)
-- [fraud-risk-engine-database-modelling](./fraud-risk-engine-database-modelling)
-- [gaming-leaderboard-database-modelling](./gaming-leaderboard-database-modelling)
-- [GitHub-Database-Modelling](./github-database-modelling)
-- [google-calendar-database-modelling](./google-calendar-database-modelling)
-- [grocery-quick-commerce-database-modelling](./grocery-quick-commerce-database-modelling)
-- [hotel-management-database-modelling](./hotel-management-database-modelling)
-- [hr-payroll-database-modelling](./hr-payroll-database-modelling)
-- [insurance-policy-claims-database-modelling](./insurance-policy-claims-database-modelling)
-- [iot-device-telemetry-database-modelling](./iot-device-telemetry-database-modelling)
-- [job-board-recruitment-database-modelling](./job-board-recruitment-database-modelling)
-- [knowledge-base-wiki-database-modelling](./knowledge-base-wiki-database-modelling)
-- [learning-management-system-database-modelling](./learning-management-system-database-modelling)
-- [loan-origination-database-modelling](./loan-origination-database-modelling)
-- [logistics-warehouse-database-modelling](./logistics-warehouse-database-modelling)
-- [meal-subscription-database-modelling](./meal-subscription-database-modelling)
-- [messaging-chat-database-modelling](./messaging-chat-database-modelling)
-- [microblogging-social-feed-database-modelling](./microblogging-social-feed-database-modelling)
-- [music-streaming-server](./music-streaming-server)
-- [notification-platform-database-modelling](./notification-platform-database-modelling)
-- [observability-metrics-logs-database-modelling](./observability-metrics-logs-database-modelling)
-- [online-exam-proctoring-database-modelling](./online-exam-proctoring-database-modelling)
-- [parking-management-database-modelling](./parking-management-database-modelling)
-- [pharmacy-management-database-modelling](./pharmacy-management-database-modelling)
-- [project-management-database-modelling](./project-management-database-modelling)
-- [real-estate-listings-database-modelling](./real-estate-listings-database-modelling)
-- [Reddit Nested Comment](./reddit-nested-comment)
-- [restaurant-pos-database-modelling](./restaurant-pos-database-modelling)
-- [ride-sharing-database-modelling](./ride-sharing-database-modelling)
-- [Room-Booking-Database-Modelling](./room-booking-database-modelling)
-- [saas-subscription-billing-database-modelling](./saas-subscription-billing-database-modelling)
-- [school-management-database-modelling](./school-management-database-modelling)
-- [search-indexing-database-modelling](./search-indexing-database-modelling)
-- [shipment-tracking-database-modelling](./shipment-tracking-database-modelling)
-- [short-video-platform-database-modelling](./short-video-platform-database-modelling)
-- [sports-fantasy-league-database-modelling](./sports-fantasy-league-database-modelling)
-- [telemedicine-database-modelling](./telemedicine-database-modelling)
-- [travel-itinerary-booking-database-modelling](./travel-itinerary-booking-database-modelling)
-- [video-conferencing-database-modelling](./video-conferencing-database-modelling)
-- [voting-polling-system-database-modelling](./voting-polling-system-database-modelling)
-- [wallet-ledger-database-modelling](./wallet-ledger-database-modelling)
-- [wp-content-management-system](./wp-content-management-system)
+## Non-Functional Requirement
+
+- **Correctness first:** constraints enforce key business invariants.
+- **Performance:** p95 reads should stay low for hot paths using query-driven indexes.
+- **Scalability:** support growth from early stage to high-scale partitioned workloads.
+- **Availability:** isolate write failures and keep read APIs resilient.
+- **Auditability:** retain history and actor/source metadata for compliance.
+
+:::info Fun fact 1
+Most production incidents in CRUD-heavy systems are caused by **state transition ambiguity** (missing history), not by missing tables.
+:::
+
+:::info Fun fact 2
+A single well-designed composite index can replace 3–5 naive indexes and significantly reduce write amplification.
+:::
+
+## Thinking or strategy to approach this problem
+
+1. Start with the top 5 API calls (2–3 writes, 2–3 reads).
+2. Model source-of-truth tables around transaction boundaries.
+3. Add append-only history for state transitions and replayability.
+4. Add idempotency and audit trails before scale amplifies mistakes.
+5. Add denormalized read models only where latency or cost justifies them.
+
+:::note
+Think in **query shapes**, not entities alone. Entity-first modelling without query analysis almost always creates index debt.
+:::
+
+## Core enttiles
+
+- `primary_records`
+
+## All tables and their relatoinship..
+
+### `primary_records`
+
+- Purpose: stores **primary records** state.
+- Key columns: `id`, `status`, `created_at`.
+- Suggested write invariants: PK uniqueness, FK integrity, `NOT NULL` on required fields.
+
+### Relationship map
+
+- No explicit FK found in source SQL; relationship links should be defined per business flow.
+
+## Approach the solution and requirement fit
+
+### Okaish option
+
+- Keep only core tables and basic indexes.
+- Works for MVP and low throughput.
+- Gaps: weak audit trail, retry duplication risk, poor observability.
+
+### Good option
+
+- Add lifecycle history + idempotency key table.
+- Add composite indexes for top list/detail reads.
+- Add actor/source metadata for critical mutations.
+- Satisfies most functional + reliability requirements for medium scale.
+
+### Best option
+
+- Keep immutable event/history trail plus canonical OLTP tables.
+- Use outbox/eventing for async workflows and notification fanout.
+- Build read-optimized projections/materialized views for heavy dashboards.
+- Add partitioning (time/tenant/region) and archival policy.
+- Add SLO-aware observability: slow-query logs, cardinality checks, index hit ratio.
+
+:::note
+Use **Best** only where workload justifies complexity. Over-engineering early can slow feature velocity.
+:::
+
+## Query execution, scale path, and performance depth
+
+### Typical read paths
+
+- **Timeline/list query:** filter + sort by recent timestamp (`created_at DESC`) with stable cursor pagination.
+- **Detail query:** point lookup by PK + minimal joins to avoid N+1 patterns.
+- **Operational query:** history/audit lookup for investigations.
+
+### Recommended index strategy
+
+- `idx_primary_records_created_at` on `primary_records(created_at DESC)`
+- `idx_primary_records_status_created` on `primary_records(status, created_at DESC)`
+
+### How queries run at different scales
+
+- **< 100K rows/table:** straightforward B-Tree indexes usually enough.
+- **100K–10M rows/table:** composite indexes + careful selectivity become critical.
+- **10M+ rows/table:** partition by time/tenant/region; avoid cross-partition scans.
+- **100M+ events/history:** separate hot vs cold storage, archive old partitions, and precompute heavy aggregates.
+
+### Write path considerations
+
+- Wrap related writes in a single transaction where invariants must hold.
+- Keep transaction scope short to reduce lock contention.
+- Use idempotency keys for retried API calls.
+- For counters/aggregates, prefer async projection updates from outbox/event stream.
+
+### Failure-mode design
+
+- Duplicate requests -> blocked by idempotency constraint.
+- Partial workflow failure -> recovered via event replay/history state.
+- Slow read endpoints -> solved by index review or read model projection.
+- Compliance/audit demand -> satisfied through immutable history + audit tables.
+
+:::info Deep-dive tip
+For each endpoint, document: `expected QPS`, `expected rows scanned`, `target p95`, and `index used`.
+That one table is often enough to predict when a schema needs partitioning.
+:::

@@ -5,300 +5,169 @@ slug: /case-studies/designing-a-like-reaction-system-facebook---linkedin
 
 > Source: `Designing a Like-Reaction System (Facebook - LinkedIn)/Readme.md`
 
-### 🧱 Tables
+# Designing A Like Reaction System Facebook   Linkedin
 
-### **Reaction (Source of Truth)**
+## Functional Requirement
 
-```sql
-CREATE TABLE Reaction (
-    user_id BIGINT NOT NULL,
-    entity_id BIGINT NOT NULL,
-    entity_type VARCHAR(20) NOT NULL,
-    reaction_type VARCHAR(20) NOT NULL,
-    created_at DATETIME,
-    PRIMARY KEY (user_id, entity_id, entity_type)
-);
-```
+- Create and update core domain records reliably.
+- Fetch fast read APIs for dashboard, detail, and list views.
+- Track lifecycle transitions (draft/active/completed/cancelled style states).
+- Support retries safely without duplicate business effects.
+- Enable operational visibility (audit, timeline, troubleshooting).
 
-### **ReactionCounter (Fast Reads)**
+## Non-Functional Requirement
 
-```sql
-CREATE TABLE ReactionCounter (
-    entity_id BIGINT NOT NULL,
-    entity_type VARCHAR(20) NOT NULL,
-    reaction_type VARCHAR(20) NOT NULL,
-    count BIGINT NOT NULL,
-    PRIMARY KEY (entity_id, entity_type, reaction_type)
-);
-```
+- **Correctness first:** constraints enforce key business invariants.
+- **Performance:** p95 reads should stay low for hot paths using query-driven indexes.
+- **Scalability:** support growth from early stage to high-scale partitioned workloads.
+- **Availability:** isolate write failures and keep read APIs resilient.
+- **Auditability:** retain history and actor/source metadata for compliance.
 
-### 🧱 Tables
+:::info Fun fact 1
+Most production incidents in CRUD-heavy systems are caused by **state transition ambiguity** (missing history), not by missing tables.
+:::
 
-### **Reaction (Same as baseline)**
+:::info Fun fact 2
+A single well-designed composite index can replace 3–5 naive indexes and significantly reduce write amplification.
+:::
 
-```sql
-CREATE TABLE Reaction (
-    user_id BIGINT,
-    entity_id BIGINT,
-    entity_type VARCHAR(20),
-    reaction_type VARCHAR(20),
-    updated_at DATETIME,
-    PRIMARY KEY (user_id, entity_id, entity_type)
-);
-```
+## Thinking or strategy to approach this problem
 
-### **ReactionEvents (Optional / Kafka-backed)**
+1. Start with the top 5 API calls (2–3 writes, 2–3 reads).
+2. Model source-of-truth tables around transaction boundaries.
+3. Add append-only history for state transitions and replayability.
+4. Add idempotency and audit trails before scale amplifies mistakes.
+5. Add denormalized read models only where latency or cost justifies them.
 
-```sql
-CREATE TABLE ReactionEvent (
-    event_id BIGINT PRIMARY KEY,
-    user_id BIGINT,
-    entity_id BIGINT,
-    entity_type VARCHAR(20),
-    old_reaction VARCHAR(20),
-    new_reaction VARCHAR(20),
-    created_at DATETIME
-);
-```
+:::note
+Think in **query shapes**, not entities alone. Entity-first modelling without query analysis almost always creates index debt.
+:::
 
-### **ReactionCounter (Eventually Updated)**
+## Core enttiles
 
-```sql
-CREATE TABLE ReactionCounter (
-    entity_id BIGINT,
-    entity_type VARCHAR(20),
-    reaction_type VARCHAR(20),
-    count BIGINT,
-    PRIMARY KEY (entity_id, entity_type, reaction_type)
-);
-```
+- `Reaction`
+- `ReactionCounter`
+- `ReactionEvent`
+- `ReactionLog`
+- `ReactionSnapshot`
+- `FeedReactionSnapshot`
+- `ReactionCounterCRDT`
 
-### 🧱 Tables
-
-### **ReactionLog (Append Only)**
-
-```sql
-CREATE TABLE ReactionLog (
-    event_id BIGINT PRIMARY KEY,
-    user_id BIGINT,
-    entity_id BIGINT,
-    entity_type VARCHAR(20),
-    reaction_type VARCHAR(20),
-    created_at DATETIME
-);
-```
-
-### **ReactionSnapshot (Compacted View)**
-
-```sql
-CREATE TABLE ReactionSnapshot (
-    user_id BIGINT,
-    entity_id BIGINT,
-    entity_type VARCHAR(20),
-    reaction_type VARCHAR(20),
-    PRIMARY KEY (user_id, entity_id, entity_type)
-);
-```
-
-### **ReactionCounter**
-
-```sql
-CREATE TABLE ReactionCounter (
-    entity_id BIGINT,
-    entity_type VARCHAR(20),
-    reaction_type VARCHAR(20),
-    count BIGINT,
-    PRIMARY KEY (entity_id, entity_type, reaction_type)
-);
-```
-
-### 🧱 Tables
-
-### **Reaction**
-
-```sql
-CREATE TABLE Reaction (
-    user_id BIGINT,
-    entity_id BIGINT,
-    reaction_type VARCHAR(20),
-    PRIMARY KEY (user_id, entity_id)
-);
-```
-
-### **FeedReactionSnapshot**
-
-```sql
-CREATE TABLE FeedReactionSnapshot (
-    entity_id BIGINT PRIMARY KEY,
-    like_count BIGINT,
-    love_count BIGINT,
-    laugh_count BIGINT
-);
-```
-
-### 🧱 Tables
-
-```sql
-CREATE TABLE Reaction (
-    user_id BIGINT,
-    entity_id BIGINT,
-    reaction_type VARCHAR(20)
-);
-```
-
-### **Materialized View**
-
-```sql
-CREATE MATERIALIZED VIEW ReactionCounts AS
-SELECT entity_id, reaction_type, COUNT(*) AS count
-FROM Reaction
-GROUP BY entity_id, reaction_type;
-```
-
-### **Reaction (Local Truth)**
-
-```sql
-CREATE TABLE Reaction (
-    user_id BIGINT,
-    entity_id BIGINT,
-    reaction_type VARCHAR(20),
-    region VARCHAR(20)
-);
-```
-
-### **ReactionCounterCRDT**
-
-```sql
-CREATE TABLE ReactionCounterCRDT (
-    entity_id BIGINT,
-    reaction_type VARCHAR(20),
-    region VARCHAR(20),
-    count BIGINT,
-    PRIMARY KEY (entity_id, reaction_type, region)
-);
-```
-
-
-## Visual table schema (auto-generated)
+## All tables and their relatoinship..
 
 ### `Reaction`
 
-| Column | Type | Nullable | Default | Key |
-|---|---|---|---|---|
-| `user_id` | `BIGINT` | NO | `` | `PK` |
-| `entity_id` | `BIGINT` | NO | `` | `PK` |
-| `entity_type` | `VARCHAR(20)` | NO | `` | `PK` |
-| `reaction_type` | `VARCHAR(20)` | NO | `` | `` |
-| `created_at` | `DATETIME` | YES | `` | `` |
+- Purpose: stores **Reaction** state.
+- Key columns: `user_id`, `entity_id`, `reaction_type`, `region`.
+- Suggested write invariants: PK uniqueness, FK integrity, `NOT NULL` on required fields.
 
 ### `ReactionCounter`
 
-| Column | Type | Nullable | Default | Key |
-|---|---|---|---|---|
-| `entity_id` | `BIGINT` | NO | `` | `PK` |
-| `entity_type` | `VARCHAR(20)` | NO | `` | `PK` |
-| `reaction_type` | `VARCHAR(20)` | NO | `` | `PK` |
-| `count` | `BIGINT` | NO | `` | `` |
-
-### `Reaction`
-
-| Column | Type | Nullable | Default | Key |
-|---|---|---|---|---|
-| `user_id` | `BIGINT` | YES | `` | `PK` |
-| `entity_id` | `BIGINT` | YES | `` | `PK` |
-| `entity_type` | `VARCHAR(20)` | YES | `` | `PK` |
-| `reaction_type` | `VARCHAR(20)` | YES | `` | `` |
-| `updated_at` | `DATETIME` | YES | `` | `` |
+- Purpose: stores **ReactionCounter** state.
+- Key columns: `entity_id`, `entity_type`, `reaction_type`, `count`.
+- Suggested write invariants: PK uniqueness, FK integrity, `NOT NULL` on required fields.
 
 ### `ReactionEvent`
 
-| Column | Type | Nullable | Default | Key |
-|---|---|---|---|---|
-| `event_id` | `BIGINT` | NO | `` | `PK` |
-| `user_id` | `BIGINT` | YES | `` | `` |
-| `entity_id` | `BIGINT` | YES | `` | `` |
-| `entity_type` | `VARCHAR(20)` | YES | `` | `` |
-| `old_reaction` | `VARCHAR(20)` | YES | `` | `` |
-| `new_reaction` | `VARCHAR(20)` | YES | `` | `` |
-| `created_at` | `DATETIME` | YES | `` | `` |
-
-### `ReactionCounter`
-
-| Column | Type | Nullable | Default | Key |
-|---|---|---|---|---|
-| `entity_id` | `BIGINT` | YES | `` | `PK` |
-| `entity_type` | `VARCHAR(20)` | YES | `` | `PK` |
-| `reaction_type` | `VARCHAR(20)` | YES | `` | `PK` |
-| `count` | `BIGINT` | YES | `` | `` |
+- Purpose: stores **ReactionEvent** state.
+- Key columns: `event_id`, `user_id`, `entity_id`, `entity_type`, `old_reaction`, `new_reaction`, `created_at`.
+- Suggested write invariants: PK uniqueness, FK integrity, `NOT NULL` on required fields.
 
 ### `ReactionLog`
 
-| Column | Type | Nullable | Default | Key |
-|---|---|---|---|---|
-| `event_id` | `BIGINT` | NO | `` | `PK` |
-| `user_id` | `BIGINT` | YES | `` | `` |
-| `entity_id` | `BIGINT` | YES | `` | `` |
-| `entity_type` | `VARCHAR(20)` | YES | `` | `` |
-| `reaction_type` | `VARCHAR(20)` | YES | `` | `` |
-| `created_at` | `DATETIME` | YES | `` | `` |
+- Purpose: stores **ReactionLog** state.
+- Key columns: `event_id`, `user_id`, `entity_id`, `entity_type`, `reaction_type`, `created_at`.
+- Suggested write invariants: PK uniqueness, FK integrity, `NOT NULL` on required fields.
 
 ### `ReactionSnapshot`
 
-| Column | Type | Nullable | Default | Key |
-|---|---|---|---|---|
-| `user_id` | `BIGINT` | YES | `` | `PK` |
-| `entity_id` | `BIGINT` | YES | `` | `PK` |
-| `entity_type` | `VARCHAR(20)` | YES | `` | `PK` |
-| `reaction_type` | `VARCHAR(20)` | YES | `` | `` |
-
-### `ReactionCounter`
-
-| Column | Type | Nullable | Default | Key |
-|---|---|---|---|---|
-| `entity_id` | `BIGINT` | YES | `` | `PK` |
-| `entity_type` | `VARCHAR(20)` | YES | `` | `PK` |
-| `reaction_type` | `VARCHAR(20)` | YES | `` | `PK` |
-| `count` | `BIGINT` | YES | `` | `` |
-
-### `Reaction`
-
-| Column | Type | Nullable | Default | Key |
-|---|---|---|---|---|
-| `user_id` | `BIGINT` | YES | `` | `PK` |
-| `entity_id` | `BIGINT` | YES | `` | `PK` |
-| `reaction_type` | `VARCHAR(20)` | YES | `` | `` |
+- Purpose: stores **ReactionSnapshot** state.
+- Key columns: `user_id`, `entity_id`, `entity_type`, `reaction_type`.
+- Suggested write invariants: PK uniqueness, FK integrity, `NOT NULL` on required fields.
 
 ### `FeedReactionSnapshot`
 
-| Column | Type | Nullable | Default | Key |
-|---|---|---|---|---|
-| `entity_id` | `BIGINT` | NO | `` | `PK` |
-| `like_count` | `BIGINT` | YES | `` | `` |
-| `love_count` | `BIGINT` | YES | `` | `` |
-| `laugh_count` | `BIGINT` | YES | `` | `` |
-
-### `Reaction`
-
-| Column | Type | Nullable | Default | Key |
-|---|---|---|---|---|
-| `user_id` | `BIGINT` | YES | `` | `` |
-| `entity_id` | `BIGINT` | YES | `` | `` |
-| `reaction_type` | `VARCHAR(20)` | YES | `` | `` |
-
-### `Reaction`
-
-| Column | Type | Nullable | Default | Key |
-|---|---|---|---|---|
-| `user_id` | `BIGINT` | YES | `` | `` |
-| `entity_id` | `BIGINT` | YES | `` | `` |
-| `reaction_type` | `VARCHAR(20)` | YES | `` | `` |
-| `region` | `VARCHAR(20)` | YES | `` | `` |
+- Purpose: stores **FeedReactionSnapshot** state.
+- Key columns: `entity_id`, `like_count`, `love_count`, `laugh_count`.
+- Suggested write invariants: PK uniqueness, FK integrity, `NOT NULL` on required fields.
 
 ### `ReactionCounterCRDT`
 
-| Column | Type | Nullable | Default | Key |
-|---|---|---|---|---|
-| `entity_id` | `BIGINT` | YES | `` | `PK` |
-| `reaction_type` | `VARCHAR(20)` | YES | `` | `PK` |
-| `region` | `VARCHAR(20)` | YES | `` | `PK` |
-| `count` | `BIGINT` | YES | `` | `` |
+- Purpose: stores **ReactionCounterCRDT** state.
+- Key columns: `entity_id`, `reaction_type`, `region`, `count`.
+- Suggested write invariants: PK uniqueness, FK integrity, `NOT NULL` on required fields.
+
+### Relationship map
+
+- `ReactionCounter.Reaction_id` -> `Reaction.id` (expected FK pattern)
+- `ReactionEvent.ReactionCounter_id` -> `ReactionCounter.id` (expected FK pattern)
+- `ReactionLog.ReactionEvent_id` -> `ReactionEvent.id` (expected FK pattern)
+- `ReactionSnapshot.ReactionLog_id` -> `ReactionLog.id` (expected FK pattern)
+- `FeedReactionSnapshot.ReactionSnapshot_id` -> `ReactionSnapshot.id` (expected FK pattern)
+- `ReactionCounterCRDT.FeedReactionSnapshot_id` -> `FeedReactionSnapshot.id` (expected FK pattern)
+
+## Approach the solution and requirement fit
+
+### Okaish option
+
+- Keep only core tables and basic indexes.
+- Works for MVP and low throughput.
+- Gaps: weak audit trail, retry duplication risk, poor observability.
+
+### Good option
+
+- Add lifecycle history + idempotency key table.
+- Add composite indexes for top list/detail reads.
+- Add actor/source metadata for critical mutations.
+- Satisfies most functional + reliability requirements for medium scale.
+
+### Best option
+
+- Keep immutable event/history trail plus canonical OLTP tables.
+- Use outbox/eventing for async workflows and notification fanout.
+- Build read-optimized projections/materialized views for heavy dashboards.
+- Add partitioning (time/tenant/region) and archival policy.
+- Add SLO-aware observability: slow-query logs, cardinality checks, index hit ratio.
+
+:::note
+Use **Best** only where workload justifies complexity. Over-engineering early can slow feature velocity.
+:::
+
+## Query execution, scale path, and performance depth
+
+### Typical read paths
+
+- **Timeline/list query:** filter + sort by recent timestamp (`created_at DESC`) with stable cursor pagination.
+- **Detail query:** point lookup by PK + minimal joins to avoid N+1 patterns.
+- **Operational query:** history/audit lookup for investigations.
+
+### Recommended index strategy
+
+- `idx_Reaction_created_at` on `Reaction(created_at DESC)`
+- `idx_Reaction_status_created` on `Reaction(status, created_at DESC)`
+
+### How queries run at different scales
+
+- **< 100K rows/table:** straightforward B-Tree indexes usually enough.
+- **100K–10M rows/table:** composite indexes + careful selectivity become critical.
+- **10M+ rows/table:** partition by time/tenant/region; avoid cross-partition scans.
+- **100M+ events/history:** separate hot vs cold storage, archive old partitions, and precompute heavy aggregates.
+
+### Write path considerations
+
+- Wrap related writes in a single transaction where invariants must hold.
+- Keep transaction scope short to reduce lock contention.
+- Use idempotency keys for retried API calls.
+- For counters/aggregates, prefer async projection updates from outbox/event stream.
+
+### Failure-mode design
+
+- Duplicate requests -> blocked by idempotency constraint.
+- Partial workflow failure -> recovered via event replay/history state.
+- Slow read endpoints -> solved by index review or read model projection.
+- Compliance/audit demand -> satisfied through immutable history + audit tables.
+
+:::info Deep-dive tip
+For each endpoint, document: `expected QPS`, `expected rows scanned`, `target p95`, and `index used`.
+That one table is often enough to predict when a schema needs partitioning.
+:::
