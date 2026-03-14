@@ -27,7 +27,9 @@ const config = {
           sidebarPath: require.resolve('./sidebars.js'),
           routeBasePath: '/',
         },
-        blog: false,
+        blog: {
+          showReadingTime: true,
+        },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
         },
@@ -42,6 +44,7 @@ const config = {
       items: [
         {to: '/in-a-hurry/introduction', label: 'In a hurry', position: 'left'},
         {to: '/path/learning-path', label: 'Learning path', position: 'left'},
+        {to: '/blog', label: 'Blog', position: 'left'},
         {
           href: 'https://github.com/ashishps1/awesome-database-modelling-design',
           label: 'GitHub',
