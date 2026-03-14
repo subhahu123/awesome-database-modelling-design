@@ -23,12 +23,12 @@ slug: /case-studies/insurance-policy-claims-database-modelling
 - **Availability:** isolate write failures and keep read APIs resilient.
 - **Auditability:** retain history and actor/source metadata for compliance.
 
-:::info Fun fact 1
-Most production incidents in CRUD-heavy systems are caused by **state transition ambiguity** (missing history), not by missing tables.
+:::info Insurance Policy Claims Database Modelling insight 1
+Financial flows require **immutability-first thinking**: corrections should be compensating entries, not destructive updates.
 :::
 
-:::info Fun fact 2
-A single well-designed composite index can replace 3–5 naive indexes and significantly reduce write amplification.
+:::info Insurance Policy Claims Database Modelling insight 2
+Read performance matters, but reconciliation correctness and idempotent posting are the real availability guards here.
 :::
 
 ## Thinking or strategy to approach this problem
@@ -40,7 +40,7 @@ A single well-designed composite index can replace 3–5 naive indexes and signi
 5. Add denormalized read models only where latency or cost justifies them.
 
 :::note
-Think in **query shapes**, not entities alone. Entity-first modelling without query analysis almost always creates index debt.
+Store actor/source metadata for every monetary state transition to simplify audits and dispute investigations.
 :::
 
 ## Core enttiles
@@ -96,6 +96,10 @@ Think in **query shapes**, not entities alone. Entity-first modelling without qu
 
 
 ## Visual understanding (auto-generated)
+
+:::tip Try interactive playground for this case study
+Open `/path/interactive-playground?case=insurance-policy-claims-database-modelling` to experiment with indexes, retries, idempotency, and audit settings using a domain-tuned preset.
+:::
 
 These visuals are a quick mental model of the same schema and workflow described above. Start with ER (what is linked), then lifecycle (how writes happen safely), then query path (why reads are fast).
 

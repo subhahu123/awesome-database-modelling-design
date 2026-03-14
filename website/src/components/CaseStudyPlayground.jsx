@@ -1,42 +1,94 @@
 import React, {useMemo, useState} from 'react';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 
-const SCENARIOS = {
-  ecommerce: {
-    label: 'E-commerce checkout',
-    baseWrite: 55,
-    baseRead: 38,
-    entities: ['orders', 'order_items', 'payments', 'shipments'],
+const PRESET_BY_KEYWORD = [
+  {
+    keys: ['food-delivery', 'restaurant-pos', 'grocery-quick-commerce', 'meal-subscription'],
+    label: 'Order fulfillment systems',
+    baseWrite: 58,
+    baseRead: 34,
+    entities: ['orders', 'order_items', 'status_history', 'payments', 'delivery_assignments'],
     recommendedIndex: 'idx_orders_customer_created (customer_id, created_at DESC)',
+    tip: 'Prioritize status transition integrity so cancellation, refund, and dispatch states never conflict.',
   },
-  ride: {
-    label: 'Ride sharing trip flow',
-    baseWrite: 48,
-    baseRead: 28,
-    entities: ['trips', 'trip_status_history', 'drivers', 'pricing_quotes'],
-    recommendedIndex: 'idx_trips_rider_created (rider_id, created_at DESC)',
+  {
+    keys: ['ride-sharing', 'car-rental', 'travel-itinerary-booking', 'airline-reservation'],
+    label: 'Mobility & booking systems',
+    baseWrite: 50,
+    baseRead: 30,
+    entities: ['bookings', 'inventory_slots', 'pricing_quotes', 'booking_events'],
+    recommendedIndex: 'idx_bookings_user_tripdate (user_id, trip_date DESC)',
+    tip: 'Use idempotent booking confirmation and hold-expiry logic to avoid overbooking under retries.',
   },
-  support: {
-    label: 'Support ticket lifecycle',
-    baseWrite: 35,
-    baseRead: 24,
-    entities: ['tickets', 'ticket_events', 'agents', 'sla_policies'],
-    recommendedIndex: 'idx_tickets_status_updated (status, updated_at DESC)',
+  {
+    keys: ['banking-core-ledger', 'wallet-ledger', 'saas-subscription-billing', 'loan-origination', 'insurance-policy-claims'],
+    label: 'Ledger and financial workflows',
+    baseWrite: 67,
+    baseRead: 29,
+    entities: ['accounts', 'ledger_entries', 'payment_intents', 'reconciliation_runs'],
+    recommendedIndex: 'idx_ledger_account_time (account_id, created_at DESC)',
+    tip: 'Immutable entries + reconciliation reads are more important than aggressive denormalization.',
   },
+  {
+    keys: ['messaging-chat', 'notification-platform', 'video-conferencing', 'microblogging-social-feed', 'short-video-platform'],
+    label: 'Realtime communication',
+    baseWrite: 47,
+    baseRead: 42,
+    entities: ['messages', 'delivery_receipts', 'conversation_participants', 'fanout_jobs'],
+    recommendedIndex: 'idx_messages_conversation_time (conversation_id, created_at DESC)',
+    tip: 'Optimize hot read paths (recent timeline/inbox) with strict pagination and write fanout controls.',
+  },
+  {
+    keys: ['hr-payroll', 'school-management', 'learning-management-system', 'e-learning-live-classes', 'online-exam-proctoring'],
+    label: 'Education & workforce systems',
+    baseWrite: 40,
+    baseRead: 27,
+    entities: ['users', 'enrollments', 'sessions', 'progress_events', 'audit_logs'],
+    recommendedIndex: 'idx_progress_user_time (user_id, updated_at DESC)',
+    tip: 'Keep auditability and role-based ownership explicit for compliance-heavy data access.',
+  },
+  {
+    keys: ['ad-tech-bidding', 'api-rate-limiting', 'fraud-risk-engine', 'feature-flag-platform', 'observability-metrics-logs', 'search-indexing'],
+    label: 'High-throughput control planes',
+    baseWrite: 54,
+    baseRead: 36,
+    entities: ['events', 'policy_rules', 'evaluations', 'aggregates'],
+    recommendedIndex: 'idx_eval_subject_time (subject_id, created_at DESC)',
+    tip: 'Model burst traffic + retries first; these systems fail from cardinality and write amplification.',
+  },
+];
+
+const DEFAULT_PRESET = {
+  label: 'General case-study workload',
+  baseWrite: 45,
+  baseRead: 32,
+  entities: ['primary_records', 'record_items', 'status_history', 'idempotency_keys', 'audit_logs'],
+  recommendedIndex: 'idx_records_status_created (status, created_at DESC)',
+  tip: 'Start from top read/write APIs and align constraints + indexes directly with those query shapes.',
 };
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(value, max));
 }
 
-export default function CaseStudyPlayground() {
-  const [scenario, setScenario] = useState('ecommerce');
+function getPreset(caseSlug) {
+  if (!caseSlug) return DEFAULT_PRESET;
+  const hit = PRESET_BY_KEYWORD.find(group => group.keys.some(key => caseSlug.includes(key)));
+  return hit || DEFAULT_PRESET;
+}
+
+export default function CaseStudyPlayground({caseSlug}) {
+  const {siteConfig} = useDocusaurusContext();
+  const runtimeSlug =
+    caseSlug || (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('case') : '');
+
+  const preset = getPreset(runtimeSlug || '');
+
   const [qps, setQps] = useState(120);
   const [hasCompositeIndex, setHasCompositeIndex] = useState(true);
   const [hasIdempotency, setHasIdempotency] = useState(true);
   const [hasAuditTrail, setHasAuditTrail] = useState(true);
   const [retries, setRetries] = useState(2);
-
-  const config = SCENARIOS[scenario];
 
   const metrics = useMemo(() => {
     const writePenalty = hasIdempotency ? 4 : 0;
@@ -46,8 +98,8 @@ export default function CaseStudyPlayground() {
     const readMultiplier = hasCompositeIndex ? 1 : 2.6;
     const qpsPressure = qps / 100;
 
-    const writeP95 = Math.round((config.baseWrite + writePenalty + auditPenalty + retryPenalty) * qpsPressure);
-    const readP95 = Math.round(config.baseRead * readMultiplier * qpsPressure);
+    const writeP95 = Math.round((preset.baseWrite + writePenalty + auditPenalty + retryPenalty) * qpsPressure);
+    const readP95 = Math.round(preset.baseRead * readMultiplier * qpsPressure);
 
     const duplicateRisk = hasIdempotency ? clamp(retries * 2, 0, 12) : clamp(20 + retries * 18, 0, 100);
     const auditReadiness = hasAuditTrail ? 92 : 34;
@@ -58,30 +110,22 @@ export default function CaseStudyPlayground() {
     if (duplicateRisk < 12 && readP95 < 80 && writeP95 < 110 && hasAuditTrail) verdict = 'Best';
 
     return {writeP95, readP95, duplicateRisk, auditReadiness, indexFitScore, verdict};
-  }, [config, qps, hasCompositeIndex, hasIdempotency, hasAuditTrail, retries]);
+  }, [preset, qps, hasCompositeIndex, hasIdempotency, hasAuditTrail, retries]);
+
+  const baseUrl = siteConfig.baseUrl || '/';
 
   return (
     <div className="case-playground">
       <h2>Interactive case-study playground</h2>
       <p>
-        Tweak production-like settings and see how schema decisions (indexing, idempotency, audit trail)
-        affect latency and reliability.
+        Preset: <strong>{preset.label}</strong>
+        {runtimeSlug ? <span> · case: <code>{runtimeSlug}</code></span> : null}
       </p>
+      <p>{preset.tip}</p>
 
       <div className="case-playground-grid">
         <section className="case-card">
           <h3>Scenario setup</h3>
-
-          <label>
-            Use case
-            <select value={scenario} onChange={e => setScenario(e.target.value)}>
-              {Object.entries(SCENARIOS).map(([key, value]) => (
-                <option key={key} value={key}>
-                  {value.label}
-                </option>
-              ))}
-            </select>
-          </label>
 
           <label>
             Request load (QPS): <strong>{qps}</strong>
@@ -166,13 +210,18 @@ export default function CaseStudyPlayground() {
 
           <h4>Schema entities in play</h4>
           <ul>
-            {config.entities.map(entity => (
+            {preset.entities.map(entity => (
               <li key={entity}>{entity}</li>
             ))}
           </ul>
 
           <p>
-            <strong>Recommended index:</strong> {config.recommendedIndex}
+            <strong>Recommended index:</strong> {preset.recommendedIndex}
+          </p>
+
+          <p>
+            Open another case preset:{' '}
+            <a href={`${baseUrl}path/interactive-playground`}>global playground</a>
           </p>
         </section>
       </div>
