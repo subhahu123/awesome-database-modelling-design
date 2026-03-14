@@ -12,7 +12,7 @@ module.exports = {
     {
       type: 'category',
       label: 'Path',
-      items: ['path/learning-path', 'path/blogs-overview'],
+      items: ['path/learning-path', 'path/blogs-overview', 'path/schema-query-visuals'],
     },
     {
       type: 'category',

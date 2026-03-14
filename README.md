@@ -182,6 +182,7 @@ The learning site now runs on **Docusaurus 2** under `website/`.
 - Sidebar: `website/sidebars.js`
 - Learn docs: `website/docs/in-a-hurry/*`
 - Case study docs: `website/docs/case-studies/*` (imported from case-study READMEs)
+- Mermaid visuals: enabled via Docusaurus plugin for ER/query flow diagrams
 
 Run locally:
 

@@ -19,6 +19,12 @@ const config = {
     locales: ['en'],
   },
 
+  markdown: {
+    mermaid: true,
+  },
+
+  themes: ['@docusaurus/theme-mermaid'],
+
   presets: [
     [
       'classic',
@@ -41,6 +47,9 @@ const config = {
       defaultMode: 'dark',
       disableSwitch: false,
       respectPrefersColorScheme: true,
+    },
+    mermaid: {
+      theme: {light: 'neutral', dark: 'dark'},
     },
     announcementBar: {
       id: 'branding-refresh',
