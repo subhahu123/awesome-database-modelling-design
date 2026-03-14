@@ -61,6 +61,10 @@ const SOLUTION_TEMPLATES = {
     readModelQuality: 35,
     partitionReadiness: 20,
     outboxReliability: 25,
+    tableCount: 4,
+    avgRelationships: 1,
+    fkIntegrity: 45,
+    normalization: 45,
   },
   good: {
     label: 'Good solution',
@@ -71,6 +75,10 @@ const SOLUTION_TEMPLATES = {
     readModelQuality: 68,
     partitionReadiness: 45,
     outboxReliability: 65,
+    tableCount: 7,
+    avgRelationships: 2,
+    fkIntegrity: 72,
+    normalization: 70,
   },
   best: {
     label: 'Best solution',
@@ -81,6 +89,10 @@ const SOLUTION_TEMPLATES = {
     readModelQuality: 88,
     partitionReadiness: 86,
     outboxReliability: 90,
+    tableCount: 10,
+    avgRelationships: 3,
+    fkIntegrity: 92,
+    normalization: 85,
   },
 };
 
@@ -101,6 +113,7 @@ export default function CaseStudyPlayground({caseSlug}) {
   const [qps, setQps] = useState(120);
   const [retryRate, setRetryRate] = useState(2);
   const [concurrency, setConcurrency] = useState(12);
+
   const [indexCoverage, setIndexCoverage] = useState(70);
   const [idempotency, setIdempotency] = useState(78);
   const [auditCoverage, setAuditCoverage] = useState(72);
@@ -108,6 +121,11 @@ export default function CaseStudyPlayground({caseSlug}) {
   const [readModelQuality, setReadModelQuality] = useState(68);
   const [partitionReadiness, setPartitionReadiness] = useState(45);
   const [outboxReliability, setOutboxReliability] = useState(65);
+
+  const [tableCount, setTableCount] = useState(7);
+  const [avgRelationships, setAvgRelationships] = useState(2);
+  const [fkIntegrity, setFkIntegrity] = useState(72);
+  const [normalization, setNormalization] = useState(70);
 
   useEffect(() => {
     const tpl = SOLUTION_TEMPLATES[solution];
@@ -118,27 +136,47 @@ export default function CaseStudyPlayground({caseSlug}) {
     setReadModelQuality(tpl.readModelQuality);
     setPartitionReadiness(tpl.partitionReadiness);
     setOutboxReliability(tpl.outboxReliability);
+    setTableCount(tpl.tableCount);
+    setAvgRelationships(tpl.avgRelationships);
+    setFkIntegrity(tpl.fkIntegrity);
+    setNormalization(tpl.normalization);
   }, [solution]);
 
   const metrics = useMemo(() => {
     const loadFactor = qps / 100 + concurrency / 20;
 
-    const readCapacity = (indexCoverage * 0.35 + readModelQuality * 0.4 + partitionReadiness * 0.25) / 100;
-    const writeSafety = (idempotency * 0.35 + historyDepth * 0.3 + auditCoverage * 0.2 + outboxReliability * 0.15) / 100;
+    const schemaComplexity = clamp(tableCount * 5 + avgRelationships * 11, 10, 100);
+    const relationshipHealth = (fkIntegrity * 0.6 + normalization * 0.4) / 100;
 
-    const readP95 = Math.round(25 + loadFactor * 42 * (1.3 - readCapacity));
-    const writeP95 = Math.round(35 + loadFactor * 48 * (1.3 - writeSafety));
+    const readCapacity =
+      (indexCoverage * 0.3 + readModelQuality * 0.35 + partitionReadiness * 0.2 + normalization * 0.15) / 100;
+    const writeSafety =
+      (idempotency * 0.3 + historyDepth * 0.25 + auditCoverage * 0.15 + outboxReliability * 0.15 + fkIntegrity * 0.15) /
+      100;
 
-    const duplicateRisk = clamp(Math.round((100 - idempotency) * 0.6 + retryRate * 4 + (100 - outboxReliability) * 0.15), 1, 100);
-    const auditGap = clamp(Math.round((100 - auditCoverage) * 0.7 + (100 - historyDepth) * 0.3), 0, 100);
-    const scaleRisk = clamp(Math.round((100 - partitionReadiness) * 0.45 + (100 - indexCoverage) * 0.35 + concurrency * 0.9), 0, 100);
+    const readP95 = Math.round(25 + loadFactor * 42 * (1.3 - readCapacity) + schemaComplexity * 0.08);
+    const writeP95 = Math.round(35 + loadFactor * 48 * (1.3 - writeSafety) + schemaComplexity * 0.1);
+
+    const duplicateRisk = clamp(
+      Math.round((100 - idempotency) * 0.55 + retryRate * 4 + (100 - outboxReliability) * 0.15),
+      1,
+      100,
+    );
+    const auditGap = clamp(Math.round((100 - auditCoverage) * 0.6 + (100 - historyDepth) * 0.25 + (100 - fkIntegrity) * 0.15), 0, 100);
+    const scaleRisk = clamp(
+      Math.round((100 - partitionReadiness) * 0.35 + (100 - indexCoverage) * 0.3 + concurrency * 0.75 + schemaComplexity * 0.2),
+      0,
+      100,
+    );
+    const dataIntegrityRisk = clamp(Math.round((100 - fkIntegrity) * 0.6 + (100 - normalization) * 0.25 + avgRelationships * 2), 0, 100);
 
     const score = clamp(
       Math.round(
-        readCapacity * 100 * 0.35 +
-          writeSafety * 100 * 0.4 +
-          (100 - duplicateRisk) * 0.1 +
-          (100 - auditGap) * 0.1 +
+        readCapacity * 100 * 0.28 +
+          writeSafety * 100 * 0.32 +
+          relationshipHealth * 100 * 0.2 +
+          (100 - duplicateRisk) * 0.08 +
+          (100 - auditGap) * 0.07 +
           (100 - scaleRisk) * 0.05,
       ),
       0,
@@ -146,16 +184,32 @@ export default function CaseStudyPlayground({caseSlug}) {
     );
 
     let verdict = 'Good';
-    if (score < 55 || duplicateRisk > 50 || scaleRisk > 65) verdict = 'Risky';
-    if (score >= 82 && duplicateRisk < 18 && auditGap < 15 && scaleRisk < 30) verdict = 'Best-ready';
+    if (score < 55 || duplicateRisk > 50 || scaleRisk > 65 || dataIntegrityRisk > 55) verdict = 'Risky';
+    if (score >= 82 && duplicateRisk < 18 && auditGap < 15 && scaleRisk < 30 && dataIntegrityRisk < 25) {
+      verdict = 'Best-ready';
+    }
 
     const dataChanges = [
       idempotency < 40 ? 'Duplicate business rows likely under retries.' : 'Retry safety mostly preserved.',
-      historyDepth < 50 ? 'State transitions may be overwritten, hurting debugging.' : 'State timeline remains replayable.',
+      fkIntegrity < 50 ? 'Orphan/invalid references likely because FK integrity is weak.' : 'FK constraints keep relationship graph consistent.',
+      normalization < 45
+        ? 'Heavy denormalization may cause update anomalies across related tables.'
+        : 'Normalization level reduces update anomalies and keeps source of truth clearer.',
       readModelQuality < 50 ? 'Dashboard/list queries will scan broader ranges.' : 'Read path remains predictable under pagination.',
     ];
 
-    return {readP95, writeP95, duplicateRisk, auditGap, scaleRisk, score, verdict, dataChanges};
+    return {
+      readP95,
+      writeP95,
+      duplicateRisk,
+      auditGap,
+      scaleRisk,
+      dataIntegrityRisk,
+      schemaComplexity,
+      score,
+      verdict,
+      dataChanges,
+    };
   }, [
     qps,
     retryRate,
@@ -167,6 +221,10 @@ export default function CaseStudyPlayground({caseSlug}) {
     readModelQuality,
     partitionReadiness,
     outboxReliability,
+    tableCount,
+    avgRelationships,
+    fkIntegrity,
+    normalization,
   ]);
 
   return (
@@ -222,6 +280,52 @@ export default function CaseStudyPlayground({caseSlug}) {
               step="1"
               value={concurrency}
               onChange={e => setConcurrency(Number(e.target.value))}
+            />
+          </label>
+
+          <h4>Schema design variables</h4>
+          <label>
+            Number of tables: <strong>{tableCount}</strong>
+            <input
+              type="range"
+              min="3"
+              max="20"
+              step="1"
+              value={tableCount}
+              onChange={e => setTableCount(Number(e.target.value))}
+            />
+          </label>
+          <label>
+            Avg relationships / table: <strong>{avgRelationships}</strong>
+            <input
+              type="range"
+              min="0"
+              max="6"
+              step="1"
+              value={avgRelationships}
+              onChange={e => setAvgRelationships(Number(e.target.value))}
+            />
+          </label>
+          <label>
+            FK integrity coverage: <strong>{fkIntegrity}%</strong>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value={fkIntegrity}
+              onChange={e => setFkIntegrity(Number(e.target.value))}
+            />
+          </label>
+          <label>
+            Normalization balance: <strong>{normalization}%</strong>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value={normalization}
+              onChange={e => setNormalization(Number(e.target.value))}
             />
           </label>
 
@@ -327,6 +431,14 @@ export default function CaseStudyPlayground({caseSlug}) {
             <div>
               <span>Scale risk</span>
               <strong>{metrics.scaleRisk}%</strong>
+            </div>
+            <div>
+              <span>Integrity risk</span>
+              <strong>{metrics.dataIntegrityRisk}%</strong>
+            </div>
+            <div>
+              <span>Schema complexity</span>
+              <strong>{metrics.schemaComplexity}</strong>
             </div>
             <div>
               <span>Design score</span>

@@ -171,7 +171,7 @@ Use **Best** only where workload justifies complexity. Over-engineering early ca
 
 ## Interactive solution sandbox
 
-Use this in-page playground with your case context. Start with **Okaish / Good / Best** presets, then tweak variables to see how data behavior changes.
+Use this in-page playground with your case context. Start with **Okaish / Good / Best** presets, then tweak workload, table/relationship design, and solution variables to see how data behavior changes.
 
 <CaseStudyPlayground caseSlug="iot-device-telemetry-database-modelling" />
 
