@@ -3,6 +3,8 @@ title: "E-Commerce: Order + Inventory + Payment Database Modelling"
 slug: /case-studies/ecommerce-order-inventory-payment
 ---
 
+import CaseStudyPlayground from '@site/src/components/CaseStudyPlayground';
+
 > Source: `ecommerce-order-inventory-payment/README.md`
 
 # E-Commerce: Order + Inventory + Payment Database Modelling
@@ -166,6 +168,12 @@ flowchart TD
 :::note
 Use **Best** only where workload justifies complexity. Over-engineering early can slow feature velocity.
 :::
+
+## Interactive solution sandbox
+
+Use this in-page playground with your case context. Start with **Okaish / Good / Best** presets, then tweak variables to see how data behavior changes.
+
+<CaseStudyPlayground caseSlug="ecommerce-order-inventory-payment" />
 
 ## Query execution, scale path, and performance depth
 

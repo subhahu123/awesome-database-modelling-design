@@ -1,228 +1,355 @@
-import React, {useMemo, useState} from 'react';
-import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import React, {useEffect, useMemo, useState} from 'react';
 
-const PRESET_BY_KEYWORD = [
+const DOMAIN_PRESETS = [
   {
     keys: ['food-delivery', 'restaurant-pos', 'grocery-quick-commerce', 'meal-subscription'],
-    label: 'Order fulfillment systems',
-    baseWrite: 58,
-    baseRead: 34,
-    entities: ['orders', 'order_items', 'status_history', 'payments', 'delivery_assignments'],
-    recommendedIndex: 'idx_orders_customer_created (customer_id, created_at DESC)',
-    tip: 'Prioritize status transition integrity so cancellation, refund, and dispatch states never conflict.',
+    domain: 'Order fulfillment systems',
+    entities: ['orders', 'order_items', 'payments', 'delivery_assignments', 'status_history'],
+    primaryRead: 'customer recent orders + store active orders',
+    primaryWrite: 'order create -> payment authorize -> dispatch status transitions',
+    risk: 'inconsistent order state causing wrong refund/dispatch behavior',
   },
   {
-    keys: ['ride-sharing', 'car-rental', 'travel-itinerary-booking', 'airline-reservation'],
-    label: 'Mobility & booking systems',
-    baseWrite: 50,
-    baseRead: 30,
-    entities: ['bookings', 'inventory_slots', 'pricing_quotes', 'booking_events'],
-    recommendedIndex: 'idx_bookings_user_tripdate (user_id, trip_date DESC)',
-    tip: 'Use idempotent booking confirmation and hold-expiry logic to avoid overbooking under retries.',
+    keys: ['ride-sharing', 'car-rental', 'travel-itinerary-booking', 'airline-reservation', 'hotel-management'],
+    domain: 'Booking and mobility systems',
+    entities: ['bookings', 'inventory_slots', 'pricing_quotes', 'status_events'],
+    primaryRead: 'availability and user itinerary timeline',
+    primaryWrite: 'hold -> confirm -> cancel flows under retries',
+    risk: 'overbooking from race conditions between hold and confirm',
   },
   {
-    keys: ['banking-core-ledger', 'wallet-ledger', 'saas-subscription-billing', 'loan-origination', 'insurance-policy-claims'],
-    label: 'Ledger and financial workflows',
-    baseWrite: 67,
-    baseRead: 29,
-    entities: ['accounts', 'ledger_entries', 'payment_intents', 'reconciliation_runs'],
-    recommendedIndex: 'idx_ledger_account_time (account_id, created_at DESC)',
-    tip: 'Immutable entries + reconciliation reads are more important than aggressive denormalization.',
+    keys: ['banking-core-ledger', 'wallet-ledger', 'loan-origination', 'insurance-policy-claims', 'saas-subscription-billing'],
+    domain: 'Financial and ledger systems',
+    entities: ['accounts', 'ledger_entries', 'payment_intents', 'reconciliation_batches'],
+    primaryRead: 'account statement and balance trail',
+    primaryWrite: 'double-entry posting + idempotent settlement',
+    risk: 'data mutation without immutable audit trail',
   },
   {
     keys: ['messaging-chat', 'notification-platform', 'video-conferencing', 'microblogging-social-feed', 'short-video-platform'],
-    label: 'Realtime communication',
-    baseWrite: 47,
-    baseRead: 42,
-    entities: ['messages', 'delivery_receipts', 'conversation_participants', 'fanout_jobs'],
-    recommendedIndex: 'idx_messages_conversation_time (conversation_id, created_at DESC)',
-    tip: 'Optimize hot read paths (recent timeline/inbox) with strict pagination and write fanout controls.',
-  },
-  {
-    keys: ['hr-payroll', 'school-management', 'learning-management-system', 'e-learning-live-classes', 'online-exam-proctoring'],
-    label: 'Education & workforce systems',
-    baseWrite: 40,
-    baseRead: 27,
-    entities: ['users', 'enrollments', 'sessions', 'progress_events', 'audit_logs'],
-    recommendedIndex: 'idx_progress_user_time (user_id, updated_at DESC)',
-    tip: 'Keep auditability and role-based ownership explicit for compliance-heavy data access.',
+    domain: 'Realtime communication systems',
+    entities: ['messages', 'receipts', 'participants', 'fanout_jobs'],
+    primaryRead: 'timeline/inbox recent page',
+    primaryWrite: 'message ingest + delivery fanout',
+    risk: 'fanout saturation and delayed delivery visibility',
   },
   {
     keys: ['ad-tech-bidding', 'api-rate-limiting', 'fraud-risk-engine', 'feature-flag-platform', 'observability-metrics-logs', 'search-indexing'],
-    label: 'High-throughput control planes',
-    baseWrite: 54,
-    baseRead: 36,
-    entities: ['events', 'policy_rules', 'evaluations', 'aggregates'],
-    recommendedIndex: 'idx_eval_subject_time (subject_id, created_at DESC)',
-    tip: 'Model burst traffic + retries first; these systems fail from cardinality and write amplification.',
+    domain: 'High-throughput control planes',
+    entities: ['events', 'rules', 'evaluations', 'aggregates'],
+    primaryRead: 'policy/evaluation lookup by subject + recency',
+    primaryWrite: 'burst ingest with retry-safe writes',
+    risk: 'cardinality explosion and duplicate evaluation writes',
   },
 ];
 
-const DEFAULT_PRESET = {
-  label: 'General case-study workload',
-  baseWrite: 45,
-  baseRead: 32,
+const DEFAULT_CONTEXT = {
+  domain: 'General transactional system',
   entities: ['primary_records', 'record_items', 'status_history', 'idempotency_keys', 'audit_logs'],
-  recommendedIndex: 'idx_records_status_created (status, created_at DESC)',
-  tip: 'Start from top read/write APIs and align constraints + indexes directly with those query shapes.',
+  primaryRead: 'recent list + detail fetch',
+  primaryWrite: 'request validate -> transactional write -> history append',
+  risk: 'missing state transition observability',
+};
+
+const SOLUTION_TEMPLATES = {
+  okaish: {
+    label: 'Okaish solution',
+    indexCoverage: 45,
+    idempotency: 20,
+    auditCoverage: 35,
+    historyDepth: 40,
+    readModelQuality: 35,
+    partitionReadiness: 20,
+    outboxReliability: 25,
+  },
+  good: {
+    label: 'Good solution',
+    indexCoverage: 70,
+    idempotency: 78,
+    auditCoverage: 72,
+    historyDepth: 75,
+    readModelQuality: 68,
+    partitionReadiness: 45,
+    outboxReliability: 65,
+  },
+  best: {
+    label: 'Best solution',
+    indexCoverage: 90,
+    idempotency: 95,
+    auditCoverage: 92,
+    historyDepth: 94,
+    readModelQuality: 88,
+    partitionReadiness: 86,
+    outboxReliability: 90,
+  },
 };
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(value, max));
 }
 
-function getPreset(caseSlug) {
-  if (!caseSlug) return DEFAULT_PRESET;
-  const hit = PRESET_BY_KEYWORD.find(group => group.keys.some(key => caseSlug.includes(key)));
-  return hit || DEFAULT_PRESET;
+function contextForCase(caseSlug) {
+  if (!caseSlug) return DEFAULT_CONTEXT;
+  const match = DOMAIN_PRESETS.find(x => x.keys.some(k => caseSlug.includes(k)));
+  return match || DEFAULT_CONTEXT;
 }
 
 export default function CaseStudyPlayground({caseSlug}) {
-  const {siteConfig} = useDocusaurusContext();
-  const runtimeSlug =
-    caseSlug || (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('case') : '');
-
-  const preset = getPreset(runtimeSlug || '');
+  const context = useMemo(() => contextForCase(caseSlug || ''), [caseSlug]);
+  const [solution, setSolution] = useState('good');
 
   const [qps, setQps] = useState(120);
-  const [hasCompositeIndex, setHasCompositeIndex] = useState(true);
-  const [hasIdempotency, setHasIdempotency] = useState(true);
-  const [hasAuditTrail, setHasAuditTrail] = useState(true);
-  const [retries, setRetries] = useState(2);
+  const [retryRate, setRetryRate] = useState(2);
+  const [concurrency, setConcurrency] = useState(12);
+  const [indexCoverage, setIndexCoverage] = useState(70);
+  const [idempotency, setIdempotency] = useState(78);
+  const [auditCoverage, setAuditCoverage] = useState(72);
+  const [historyDepth, setHistoryDepth] = useState(75);
+  const [readModelQuality, setReadModelQuality] = useState(68);
+  const [partitionReadiness, setPartitionReadiness] = useState(45);
+  const [outboxReliability, setOutboxReliability] = useState(65);
+
+  useEffect(() => {
+    const tpl = SOLUTION_TEMPLATES[solution];
+    setIndexCoverage(tpl.indexCoverage);
+    setIdempotency(tpl.idempotency);
+    setAuditCoverage(tpl.auditCoverage);
+    setHistoryDepth(tpl.historyDepth);
+    setReadModelQuality(tpl.readModelQuality);
+    setPartitionReadiness(tpl.partitionReadiness);
+    setOutboxReliability(tpl.outboxReliability);
+  }, [solution]);
 
   const metrics = useMemo(() => {
-    const writePenalty = hasIdempotency ? 4 : 0;
-    const auditPenalty = hasAuditTrail ? 6 : 0;
-    const retryPenalty = retries * (hasIdempotency ? 1 : 12);
+    const loadFactor = qps / 100 + concurrency / 20;
 
-    const readMultiplier = hasCompositeIndex ? 1 : 2.6;
-    const qpsPressure = qps / 100;
+    const readCapacity = (indexCoverage * 0.35 + readModelQuality * 0.4 + partitionReadiness * 0.25) / 100;
+    const writeSafety = (idempotency * 0.35 + historyDepth * 0.3 + auditCoverage * 0.2 + outboxReliability * 0.15) / 100;
 
-    const writeP95 = Math.round((preset.baseWrite + writePenalty + auditPenalty + retryPenalty) * qpsPressure);
-    const readP95 = Math.round(preset.baseRead * readMultiplier * qpsPressure);
+    const readP95 = Math.round(25 + loadFactor * 42 * (1.3 - readCapacity));
+    const writeP95 = Math.round(35 + loadFactor * 48 * (1.3 - writeSafety));
 
-    const duplicateRisk = hasIdempotency ? clamp(retries * 2, 0, 12) : clamp(20 + retries * 18, 0, 100);
-    const auditReadiness = hasAuditTrail ? 92 : 34;
-    const indexFitScore = hasCompositeIndex ? 95 : 45;
+    const duplicateRisk = clamp(Math.round((100 - idempotency) * 0.6 + retryRate * 4 + (100 - outboxReliability) * 0.15), 1, 100);
+    const auditGap = clamp(Math.round((100 - auditCoverage) * 0.7 + (100 - historyDepth) * 0.3), 0, 100);
+    const scaleRisk = clamp(Math.round((100 - partitionReadiness) * 0.45 + (100 - indexCoverage) * 0.35 + concurrency * 0.9), 0, 100);
+
+    const score = clamp(
+      Math.round(
+        readCapacity * 100 * 0.35 +
+          writeSafety * 100 * 0.4 +
+          (100 - duplicateRisk) * 0.1 +
+          (100 - auditGap) * 0.1 +
+          (100 - scaleRisk) * 0.05,
+      ),
+      0,
+      100,
+    );
 
     let verdict = 'Good';
-    if (duplicateRisk > 40 || readP95 > 140) verdict = 'Risky';
-    if (duplicateRisk < 12 && readP95 < 80 && writeP95 < 110 && hasAuditTrail) verdict = 'Best';
+    if (score < 55 || duplicateRisk > 50 || scaleRisk > 65) verdict = 'Risky';
+    if (score >= 82 && duplicateRisk < 18 && auditGap < 15 && scaleRisk < 30) verdict = 'Best-ready';
 
-    return {writeP95, readP95, duplicateRisk, auditReadiness, indexFitScore, verdict};
-  }, [preset, qps, hasCompositeIndex, hasIdempotency, hasAuditTrail, retries]);
+    const dataChanges = [
+      idempotency < 40 ? 'Duplicate business rows likely under retries.' : 'Retry safety mostly preserved.',
+      historyDepth < 50 ? 'State transitions may be overwritten, hurting debugging.' : 'State timeline remains replayable.',
+      readModelQuality < 50 ? 'Dashboard/list queries will scan broader ranges.' : 'Read path remains predictable under pagination.',
+    ];
 
-  const baseUrl = siteConfig.baseUrl || '/';
+    return {readP95, writeP95, duplicateRisk, auditGap, scaleRisk, score, verdict, dataChanges};
+  }, [
+    qps,
+    retryRate,
+    concurrency,
+    indexCoverage,
+    idempotency,
+    auditCoverage,
+    historyDepth,
+    readModelQuality,
+    partitionReadiness,
+    outboxReliability,
+  ]);
 
   return (
     <div className="case-playground">
-      <h2>Interactive case-study playground</h2>
+      <h3>Case-solution playground (in-context)</h3>
       <p>
-        Preset: <strong>{preset.label}</strong>
-        {runtimeSlug ? <span> · case: <code>{runtimeSlug}</code></span> : null}
+        <strong>{context.domain}</strong> · {caseSlug || 'current case study'}
       </p>
-      <p>{preset.tip}</p>
+      <p>
+        <strong>Primary write flow:</strong> {context.primaryWrite}
+        <br />
+        <strong>Primary read flow:</strong> {context.primaryRead}
+        <br />
+        <strong>Failure mode to watch:</strong> {context.risk}
+      </p>
+
+      <div className="solution-switcher">
+        {Object.entries(SOLUTION_TEMPLATES).map(([key, config]) => (
+          <button
+            key={key}
+            type="button"
+            className={`button button--sm ${solution === key ? 'button--primary' : 'button--secondary'}`}
+            onClick={() => setSolution(key)}>
+            Apply {config.label}
+          </button>
+        ))}
+      </div>
 
       <div className="case-playground-grid">
         <section className="case-card">
-          <h3>Scenario setup</h3>
-
+          <h4>Workload variables</h4>
           <label>
-            Request load (QPS): <strong>{qps}</strong>
-            <input
-              type="range"
-              min="20"
-              max="600"
-              step="10"
-              value={qps}
-              onChange={e => setQps(Number(e.target.value))}
-            />
+            QPS: <strong>{qps}</strong>
+            <input type="range" min="20" max="800" step="10" value={qps} onChange={e => setQps(Number(e.target.value))} />
           </label>
-
           <label>
-            Retry attempts per write: <strong>{retries}</strong>
+            Retry pressure: <strong>{retryRate}%</strong>
             <input
               type="range"
               min="0"
-              max="8"
+              max="25"
               step="1"
-              value={retries}
-              onChange={e => setRetries(Number(e.target.value))}
+              value={retryRate}
+              onChange={e => setRetryRate(Number(e.target.value))}
+            />
+          </label>
+          <label>
+            Concurrent workers: <strong>{concurrency}</strong>
+            <input
+              type="range"
+              min="1"
+              max="80"
+              step="1"
+              value={concurrency}
+              onChange={e => setConcurrency(Number(e.target.value))}
             />
           </label>
 
-          <label className="case-toggle">
+          <h4>Solution variables</h4>
+          <label>
+            Index coverage: <strong>{indexCoverage}%</strong>
             <input
-              type="checkbox"
-              checked={hasCompositeIndex}
-              onChange={e => setHasCompositeIndex(e.target.checked)}
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value={indexCoverage}
+              onChange={e => setIndexCoverage(Number(e.target.value))}
             />
-            Composite read index enabled
           </label>
-
-          <label className="case-toggle">
+          <label>
+            Idempotency strength: <strong>{idempotency}%</strong>
             <input
-              type="checkbox"
-              checked={hasIdempotency}
-              onChange={e => setHasIdempotency(e.target.checked)}
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value={idempotency}
+              onChange={e => setIdempotency(Number(e.target.value))}
             />
-            Idempotency key protection enabled
           </label>
-
-          <label className="case-toggle">
+          <label>
+            Audit coverage: <strong>{auditCoverage}%</strong>
             <input
-              type="checkbox"
-              checked={hasAuditTrail}
-              onChange={e => setHasAuditTrail(e.target.checked)}
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value={auditCoverage}
+              onChange={e => setAuditCoverage(Number(e.target.value))}
             />
-            History/audit trail enabled
+          </label>
+          <label>
+            History depth: <strong>{historyDepth}%</strong>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value={historyDepth}
+              onChange={e => setHistoryDepth(Number(e.target.value))}
+            />
+          </label>
+          <label>
+            Read-model quality: <strong>{readModelQuality}%</strong>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value={readModelQuality}
+              onChange={e => setReadModelQuality(Number(e.target.value))}
+            />
+          </label>
+          <label>
+            Partition readiness: <strong>{partitionReadiness}%</strong>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value={partitionReadiness}
+              onChange={e => setPartitionReadiness(Number(e.target.value))}
+            />
+          </label>
+          <label>
+            Outbox reliability: <strong>{outboxReliability}%</strong>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value={outboxReliability}
+              onChange={e => setOutboxReliability(Number(e.target.value))}
+            />
           </label>
         </section>
 
         <section className="case-card">
-          <h3>Live outcome</h3>
+          <h4>Resulting behavior</h4>
           <div className="metrics">
-            <div>
-              <span>Write p95</span>
-              <strong>{metrics.writeP95} ms</strong>
-            </div>
             <div>
               <span>Read p95</span>
               <strong>{metrics.readP95} ms</strong>
+            </div>
+            <div>
+              <span>Write p95</span>
+              <strong>{metrics.writeP95} ms</strong>
             </div>
             <div>
               <span>Duplicate risk</span>
               <strong>{metrics.duplicateRisk}%</strong>
             </div>
             <div>
-              <span>Audit readiness</span>
-              <strong>{metrics.auditReadiness}%</strong>
+              <span>Audit gap</span>
+              <strong>{metrics.auditGap}%</strong>
             </div>
             <div>
-              <span>Index-fit score</span>
-              <strong>{metrics.indexFitScore}%</strong>
+              <span>Scale risk</span>
+              <strong>{metrics.scaleRisk}%</strong>
             </div>
             <div>
-              <span>Design tier</span>
-              <strong>{metrics.verdict}</strong>
+              <span>Design score</span>
+              <strong>{metrics.score}/100</strong>
             </div>
           </div>
 
-          <h4>Schema entities in play</h4>
+          <p>
+            <strong>Verdict:</strong> {metrics.verdict}
+          </p>
+          <h4>What changes in your data?</h4>
           <ul>
-            {preset.entities.map(entity => (
-              <li key={entity}>{entity}</li>
+            {metrics.dataChanges.map(change => (
+              <li key={change}>{change}</li>
             ))}
           </ul>
 
-          <p>
-            <strong>Recommended index:</strong> {preset.recommendedIndex}
-          </p>
-
-          <p>
-            Open another case preset:{' '}
-            <a href={`${baseUrl}path/interactive-playground`}>global playground</a>
-          </p>
+          <h4>Entities in this case context</h4>
+          <ul>
+            {context.entities.map(entity => (
+              <li key={entity}>{entity}</li>
+            ))}
+          </ul>
         </section>
       </div>
     </div>

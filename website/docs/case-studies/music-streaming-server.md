@@ -3,6 +3,8 @@ title: "Music Streaming Server"
 slug: /case-studies/music-streaming-server
 ---
 
+import CaseStudyPlayground from '@site/src/components/CaseStudyPlayground';
+
 > Source: `music-streaming-server/README.md`
 
 # Music Streaming Server
@@ -130,6 +132,12 @@ flowchart TD
 :::note
 Use **Best** only where workload justifies complexity. Over-engineering early can slow feature velocity.
 :::
+
+## Interactive solution sandbox
+
+Use this in-page playground with your case context. Start with **Okaish / Good / Best** presets, then tweak variables to see how data behavior changes.
+
+<CaseStudyPlayground caseSlug="music-streaming-server" />
 
 ## Query execution, scale path, and performance depth
 

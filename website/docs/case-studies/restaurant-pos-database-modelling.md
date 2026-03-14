@@ -3,6 +3,8 @@ title: "Restaurant POS Database Modelling"
 slug: /case-studies/restaurant-pos-database-modelling
 ---
 
+import CaseStudyPlayground from '@site/src/components/CaseStudyPlayground';
+
 > Source: `restaurant-pos-database-modelling/README.md`
 
 # Restaurant POS Database Modelling
@@ -166,6 +168,12 @@ flowchart TD
 :::note
 Use **Best** only where workload justifies complexity. Over-engineering early can slow feature velocity.
 :::
+
+## Interactive solution sandbox
+
+Use this in-page playground with your case context. Start with **Okaish / Good / Best** presets, then tweak variables to see how data behavior changes.
+
+<CaseStudyPlayground caseSlug="restaurant-pos-database-modelling" />
 
 ## Query execution, scale path, and performance depth
 

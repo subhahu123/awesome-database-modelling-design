@@ -3,6 +3,8 @@ title: "Messaging / Chat Application Database Modelling"
 slug: /case-studies/messaging-chat-database-modelling
 ---
 
+import CaseStudyPlayground from '@site/src/components/CaseStudyPlayground';
+
 > Source: `messaging-chat-database-modelling/README.md`
 
 # Messaging / Chat Application Database Modelling
@@ -166,6 +168,12 @@ flowchart TD
 :::note
 Use **Best** only where workload justifies complexity. Over-engineering early can slow feature velocity.
 :::
+
+## Interactive solution sandbox
+
+Use this in-page playground with your case context. Start with **Okaish / Good / Best** presets, then tweak variables to see how data behavior changes.
+
+<CaseStudyPlayground caseSlug="messaging-chat-database-modelling" />
 
 ## Query execution, scale path, and performance depth
 

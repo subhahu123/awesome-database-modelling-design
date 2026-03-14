@@ -3,6 +3,8 @@ title: "Reddit Nested Comment"
 slug: /case-studies/reddit-nested-comment
 ---
 
+import CaseStudyPlayground from '@site/src/components/CaseStudyPlayground';
+
 > Source: `Reddit Nested Comment/Readme.md`
 
 # Reddit Nested Comment
@@ -130,6 +132,12 @@ flowchart TD
 :::note
 Use **Best** only where workload justifies complexity. Over-engineering early can slow feature velocity.
 :::
+
+## Interactive solution sandbox
+
+Use this in-page playground with your case context. Start with **Okaish / Good / Best** presets, then tweak variables to see how data behavior changes.
+
+<CaseStudyPlayground caseSlug="reddit-nested-comment" />
 
 ## Query execution, scale path, and performance depth
 

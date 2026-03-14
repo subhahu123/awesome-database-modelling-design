@@ -3,6 +3,8 @@ title: "Wp Content Management System"
 slug: /case-studies/wp-content-management-system
 ---
 
+import CaseStudyPlayground from '@site/src/components/CaseStudyPlayground';
+
 > Source: `wp-content-management-system/README.md`
 
 # Wp Content Management System
@@ -130,6 +132,12 @@ flowchart TD
 :::note
 Use **Best** only where workload justifies complexity. Over-engineering early can slow feature velocity.
 :::
+
+## Interactive solution sandbox
+
+Use this in-page playground with your case context. Start with **Okaish / Good / Best** presets, then tweak variables to see how data behavior changes.
+
+<CaseStudyPlayground caseSlug="wp-content-management-system" />
 
 ## Query execution, scale path, and performance depth
 

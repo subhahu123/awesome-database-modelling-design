@@ -3,6 +3,8 @@ title: "Version Control System Database Model"
 slug: /case-studies/github-database-modelling
 ---
 
+import CaseStudyPlayground from '@site/src/components/CaseStudyPlayground';
+
 > Source: `GitHub-Database-Modelling/README.md`
 
 # Version Control System Database Model
@@ -130,6 +132,12 @@ flowchart TD
 :::note
 Use **Best** only where workload justifies complexity. Over-engineering early can slow feature velocity.
 :::
+
+## Interactive solution sandbox
+
+Use this in-page playground with your case context. Start with **Okaish / Good / Best** presets, then tweak variables to see how data behavior changes.
+
+<CaseStudyPlayground caseSlug="github-database-modelling" />
 
 ## Query execution, scale path, and performance depth
 

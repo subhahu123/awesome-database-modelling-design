@@ -3,6 +3,8 @@ title: "E-learning Live Classes Database Modelling"
 slug: /case-studies/e-learning-live-classes-database-modelling
 ---
 
+import CaseStudyPlayground from '@site/src/components/CaseStudyPlayground';
+
 > Source: `e-learning-live-classes-database-modelling/README.md`
 
 # E-learning Live Classes Database Modelling
@@ -166,6 +168,12 @@ flowchart TD
 :::note
 Use **Best** only where workload justifies complexity. Over-engineering early can slow feature velocity.
 :::
+
+## Interactive solution sandbox
+
+Use this in-page playground with your case context. Start with **Okaish / Good / Best** presets, then tweak variables to see how data behavior changes.
+
+<CaseStudyPlayground caseSlug="e-learning-live-classes-database-modelling" />
 
 ## Query execution, scale path, and performance depth
 

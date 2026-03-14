@@ -3,6 +3,8 @@ title: "Banking Core Ledger Database Modelling"
 slug: /case-studies/banking-core-ledger-database-modelling
 ---
 
+import CaseStudyPlayground from '@site/src/components/CaseStudyPlayground';
+
 > Source: `banking-core-ledger-database-modelling/README.md`
 
 # Banking Core Ledger Database Modelling
@@ -166,6 +168,12 @@ flowchart TD
 :::note
 Use **Best** only where workload justifies complexity. Over-engineering early can slow feature velocity.
 :::
+
+## Interactive solution sandbox
+
+Use this in-page playground with your case context. Start with **Okaish / Good / Best** presets, then tweak variables to see how data behavior changes.
+
+<CaseStudyPlayground caseSlug="banking-core-ledger-database-modelling" />
 
 ## Query execution, scale path, and performance depth
 

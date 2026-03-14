@@ -3,6 +3,8 @@ title: "Designing A Like Reaction System (Facebook   Linkedin)"
 slug: /case-studies/designing-a-like-reaction-system-facebook---linkedin
 ---
 
+import CaseStudyPlayground from '@site/src/components/CaseStudyPlayground';
+
 > Source: `Designing a Like-Reaction System (Facebook - LinkedIn)/Readme.md`
 
 # Designing A Like Reaction System Facebook   Linkedin
@@ -180,6 +182,12 @@ flowchart TD
 :::note
 Use **Best** only where workload justifies complexity. Over-engineering early can slow feature velocity.
 :::
+
+## Interactive solution sandbox
+
+Use this in-page playground with your case context. Start with **Okaish / Good / Best** presets, then tweak variables to see how data behavior changes.
+
+<CaseStudyPlayground caseSlug="designing-a-like-reaction-system-facebook---linkedin" />
 
 ## Query execution, scale path, and performance depth
 
