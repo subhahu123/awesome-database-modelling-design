@@ -96,6 +96,8 @@ Think in **query shapes**, not entities alone. Entity-first modelling without qu
 
 ## Visual understanding (auto-generated)
 
+These visuals are a quick mental model of the same schema and workflow described above. Start with ER (what is linked), then lifecycle (how writes happen safely), then query path (why reads are fast).
+
 ### ER relationship diagram
 
 ```mermaid
@@ -106,6 +108,8 @@ erDiagram
   ORDER_ITEMS }o--|| PRODUCT_VARIANTS : references
   PAYMENTS }o--|| ORDERS : references
 ```
+
+**How to read it:** arrows show FK direction from child to parent. Use this to validate ownership boundaries and cascade/constraint choices before writing migrations.
 
 ### Write lifecycle flow
 
@@ -119,6 +123,8 @@ flowchart LR
   F --> G[Read Model / API Response]
 ```
 
+**How to read it:** this is the safe write path. It highlights where to enforce validation, transactional consistency, and append-only history/audit so retries do not create data corruption.
+
 ### Query/index execution view
 
 ```mermaid
@@ -127,6 +133,8 @@ flowchart TD
   I --> P[Page/Sort Result]
   P --> R[Low-latency Response]
 ```
+
+**How to read it:** read queries should hit a selective composite index first, then fetch a small sorted page. If this path scans full tables, refine index column order to match filter + sort patterns.
 
 ## Approach the solution and requirement fit
 
