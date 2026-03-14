@@ -4,30 +4,34 @@ const DOMAIN_PRESETS = [
   {
     keys: ['food-delivery', 'restaurant-pos', 'grocery-quick-commerce', 'meal-subscription'],
     domain: 'Order fulfillment systems',
-    writeFlow: 'Customer places order → payment check → store accepts → delivery updates',
+    writeFlow: 'Customer places order -> payment check -> store accepts -> delivery updates',
     readFlow: 'Recent customer orders and active store orders',
     biggestRisk: 'Order status confusion (accepted/preparing/dispatched/cancelled).',
+    tables: ['orders', 'order_items', 'payments', 'delivery_assignments', 'status_history'],
   },
   {
     keys: ['ride-sharing', 'car-rental', 'travel-itinerary-booking', 'airline-reservation', 'hotel-management'],
     domain: 'Booking and mobility systems',
-    writeFlow: 'Hold seat/slot → confirm booking → cancel or complete',
+    writeFlow: 'Hold seat/slot -> confirm booking -> cancel or complete',
     readFlow: 'Availability and user itinerary timeline',
     biggestRisk: 'Overbooking from race conditions.',
+    tables: ['bookings', 'inventory_slots', 'pricing_quotes', 'trip_events', 'payments'],
   },
   {
     keys: ['banking-core-ledger', 'wallet-ledger', 'loan-origination', 'insurance-policy-claims', 'saas-subscription-billing'],
     domain: 'Financial and ledger systems',
-    writeFlow: 'Create posting intent → append immutable entry → reconcile',
+    writeFlow: 'Create posting intent -> append immutable entry -> reconcile',
     readFlow: 'Balance and statement timeline',
     biggestRisk: 'Incorrect financial state due to non-idempotent writes.',
+    tables: ['accounts', 'ledger_entries', 'payment_intents', 'settlements', 'reconciliation_runs'],
   },
   {
     keys: ['messaging-chat', 'notification-platform', 'video-conferencing', 'microblogging-social-feed', 'short-video-platform'],
     domain: 'Realtime communication systems',
-    writeFlow: 'Receive event → fanout → delivery updates',
+    writeFlow: 'Receive event -> fanout -> delivery updates',
     readFlow: 'Inbox/feed recent page',
     biggestRisk: 'Delivery lag and duplicate fanout.',
+    tables: ['messages', 'receipts', 'fanout_jobs', 'participants', 'notifications'],
   },
   {
     keys: ['ad-tech-bidding', 'api-rate-limiting', 'fraud-risk-engine', 'feature-flag-platform', 'observability-metrics-logs', 'search-indexing'],
@@ -35,49 +39,33 @@ const DOMAIN_PRESETS = [
     writeFlow: 'High-volume event ingest with retries',
     readFlow: 'Fast policy/evaluation lookup',
     biggestRisk: 'Duplicate writes under burst traffic.',
+    tables: ['events', 'rules', 'evaluations', 'aggregates', 'decision_logs'],
   },
 ];
 
 const DEFAULT_CONTEXT = {
   domain: 'General transactional system',
-  writeFlow: 'Validate request → write data safely → append history',
+  writeFlow: 'Validate request -> write data safely -> append history',
   readFlow: 'Recent list + detail views',
   biggestRisk: 'State changes are not traceable.',
-};
-
-const LEVELS = {
-  basic: 35,
-  decent: 65,
-  strong: 90,
+  tables: ['primary_records', 'record_items', 'status_history', 'idempotency_keys', 'audit_logs'],
 };
 
 const PRESETS = {
   okaish: {
     label: 'Okaish',
-    summary: 'Fast MVP. Good for learning and small traffic, weak under retries/scale.',
-    indexFit: 'basic',
-    retrySafety: 'basic',
-    history: 'basic',
-    scalePlan: 'basic',
-    modelClarity: 'basic',
+    summary: 'Fast MVP. Good for learning/small traffic, weak under retries and scale.',
+    metrics: {trafficLoad: 35, retryPressure: 70, indexFit: 40, retrySafety: 35, historyClarity: 35, scalePlan: 30, modelClarity: 40},
   },
   good: {
     label: 'Good',
     summary: 'Balanced production baseline for many teams.',
-    indexFit: 'decent',
-    retrySafety: 'decent',
-    history: 'decent',
-    scalePlan: 'decent',
-    modelClarity: 'decent',
+    metrics: {trafficLoad: 55, retryPressure: 45, indexFit: 68, retrySafety: 75, historyClarity: 72, scalePlan: 60, modelClarity: 70},
   },
   best: {
     label: 'Best',
     summary: 'High confidence setup for high scale and strict correctness.',
-    indexFit: 'strong',
-    retrySafety: 'strong',
-    history: 'strong',
-    scalePlan: 'strong',
-    modelClarity: 'strong',
+    metrics: {trafficLoad: 70, retryPressure: 35, indexFit: 90, retrySafety: 92, historyClarity: 92, scalePlan: 86, modelClarity: 86},
   },
 };
 
@@ -90,102 +78,75 @@ function getContext(caseSlug) {
   return DOMAIN_PRESETS.find(d => d.keys.some(k => caseSlug.includes(k))) || DEFAULT_CONTEXT;
 }
 
-function OptionGroup({title, value, onChange}) {
-  return (
-    <div className="option-group">
-      <p>
-        <strong>{title}:</strong>
-      </p>
-      <div className="solution-switcher">
-        {[
-          ['basic', 'Basic'],
-          ['decent', 'Decent'],
-          ['strong', 'Strong'],
-        ].map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            className={`button button--sm ${value === key ? 'button--primary' : 'button--secondary'}`}
-            onClick={() => onChange(key)}>
-            {label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+function pctLabel(value) {
+  if (value < 35) return 'Low';
+  if (value < 70) return 'Medium';
+  return 'High';
+}
+
+function formulaLines(m) {
+  return {
+    readLatency: `read_latency_ms = 25 + traffic_load*0.35 + (100-index_fit)*0.30 + (100-model_clarity)*0.20`,
+    duplicateRisk: `duplicate_risk_% = retry_pressure*0.45 + (100-retry_safety)*0.55`,
+    debugRisk: `debug_risk_% = (100-history_clarity)*0.65 + (100-model_clarity)*0.35`,
+    scaleRisk: `scale_risk_% = traffic_load*0.35 + (100-scale_plan)*0.45 + (100-index_fit)*0.20`,
+    overallFit: `overall_fit_% = 100 - weighted(risks) + quality_bonus(index_fit,retry_safety,history_clarity)`,
+    tableLatency: `table_latency_ms = base_read_ms + table_weight*(100-index_fit)*0.12 + table_weight*(100-model_clarity)*0.08`,
+  };
 }
 
 export default function CaseStudyPlayground({caseSlug}) {
   const context = useMemo(() => getContext(caseSlug || ''), [caseSlug]);
-
   const [preset, setPreset] = useState('good');
-  const [trafficLoad, setTrafficLoad] = useState('decent');
-  const [retryPressure, setRetryPressure] = useState('decent');
 
-  const [indexFit, setIndexFit] = useState(PRESETS.good.indexFit);
-  const [retrySafety, setRetrySafety] = useState(PRESETS.good.retrySafety);
-  const [history, setHistory] = useState(PRESETS.good.history);
-  const [scalePlan, setScalePlan] = useState(PRESETS.good.scalePlan);
-  const [modelClarity, setModelClarity] = useState(PRESETS.good.modelClarity);
-  const [customStrategy, setCustomStrategy] = useState('');
+  const [trafficLoad, setTrafficLoad] = useState(PRESETS.good.metrics.trafficLoad);
+  const [retryPressure, setRetryPressure] = useState(PRESETS.good.metrics.retryPressure);
+  const [indexFit, setIndexFit] = useState(PRESETS.good.metrics.indexFit);
+  const [retrySafety, setRetrySafety] = useState(PRESETS.good.metrics.retrySafety);
+  const [historyClarity, setHistoryClarity] = useState(PRESETS.good.metrics.historyClarity);
+  const [scalePlan, setScalePlan] = useState(PRESETS.good.metrics.scalePlan);
+  const [modelClarity, setModelClarity] = useState(PRESETS.good.metrics.modelClarity);
 
   const applyPreset = key => {
-    setPreset(key);
     const p = PRESETS[key];
-    setIndexFit(p.indexFit);
-    setRetrySafety(p.retrySafety);
-    setHistory(p.history);
-    setScalePlan(p.scalePlan);
-    setModelClarity(p.modelClarity);
+    setPreset(key);
+    setTrafficLoad(p.metrics.trafficLoad);
+    setRetryPressure(p.metrics.retryPressure);
+    setIndexFit(p.metrics.indexFit);
+    setRetrySafety(p.metrics.retrySafety);
+    setHistoryClarity(p.metrics.historyClarity);
+    setScalePlan(p.metrics.scalePlan);
+    setModelClarity(p.metrics.modelClarity);
   };
 
-  const result = useMemo(() => {
-    const readHealth = (LEVELS[indexFit] * 0.6 + LEVELS[modelClarity] * 0.4) / 100;
-    const writeHealth = (LEVELS[retrySafety] * 0.5 + LEVELS[history] * 0.35 + LEVELS[modelClarity] * 0.15) / 100;
+  const calc = useMemo(() => {
+    const baseReadMs = Math.round(25 + trafficLoad * 0.35 + (100 - indexFit) * 0.3 + (100 - modelClarity) * 0.2);
+    const duplicateRisk = clamp(Math.round(retryPressure * 0.45 + (100 - retrySafety) * 0.55), 0, 100);
+    const debugRisk = clamp(Math.round((100 - historyClarity) * 0.65 + (100 - modelClarity) * 0.35), 0, 100);
+    const scaleRisk = clamp(Math.round(trafficLoad * 0.35 + (100 - scalePlan) * 0.45 + (100 - indexFit) * 0.2), 0, 100);
+    const qualityBonus = Math.round((indexFit + retrySafety + historyClarity) / 10);
+    const overallFit = clamp(Math.round(100 - (duplicateRisk * 0.35 + debugRisk * 0.25 + scaleRisk * 0.3) + qualityBonus), 0, 100);
 
-    const loadPenalty = LEVELS[trafficLoad] / 3;
-    const retryPenalty = LEVELS[retryPressure] / 8;
-
-    const readMs = Math.round(35 + loadPenalty * (1.2 - readHealth));
-    const duplicateChance = clamp(Math.round((100 - LEVELS[retrySafety]) * 0.7 + retryPenalty), 1, 100);
-    const debugDifficulty = clamp(Math.round((100 - LEVELS[history]) * 0.7 + (100 - LEVELS[modelClarity]) * 0.3), 0, 100);
-    const scalePain = clamp(Math.round((100 - LEVELS[scalePlan]) * 0.6 + loadPenalty * 0.8), 0, 100);
-
-    const overall = clamp(
-      Math.round(
-        readHealth * 30 +
-          writeHealth * 35 +
-          (100 - duplicateChance) * 0.15 +
-          (100 - debugDifficulty) * 0.1 +
-          (100 - scalePain) * 0.1,
-      ),
-      0,
-      100,
-    );
+    const tableWeights = [1.0, 0.85, 0.75, 0.65, 0.55];
+    const tableStats = context.tables.map((table, i) => {
+      const w = tableWeights[i] || 0.5;
+      const latency = Math.round(baseReadMs + w * (100 - indexFit) * 0.12 + w * (100 - modelClarity) * 0.08);
+      const risk = clamp(Math.round((100 - historyClarity) * (0.4 + w * 0.2) + duplicateRisk * (0.2 + w * 0.1)), 0, 100);
+      return {table, latency, risk, width: clamp(Math.round((latency / 160) * 100), 8, 100)};
+    });
 
     let verdict = 'Good fit';
-    if (overall < 55 || duplicateChance > 50 || scalePain > 60) verdict = 'Needs redesign';
-    if (overall > 82 && duplicateChance < 20 && debugDifficulty < 20 && scalePain < 30) verdict = 'Best-ready';
+    if (overallFit < 55 || duplicateRisk > 50 || scaleRisk > 60) verdict = 'Needs redesign';
+    if (overallFit > 82 && duplicateRisk < 20 && debugRisk < 25 && scaleRisk < 30) verdict = 'Best-ready';
 
-    const guidance = [
-      duplicateChance > 45
-        ? 'Your current write strategy may create duplicates during retries. Improve retry-safe write handling.'
-        : 'Retries are mostly handled safely with this setup.',
-      debugDifficulty > 45
-        ? 'Issue investigation will be slow. Strengthen history clarity to trace state transitions.'
-        : 'History trail is clear enough for faster production debugging.',
-      scalePain > 45
-        ? 'This design may struggle as traffic grows. Improve scale plan and query/index fit.'
-        : 'Scaling strategy looks healthy for current traffic level.',
-    ];
+    return {baseReadMs, duplicateRisk, debugRisk, scaleRisk, overallFit, verdict, tableStats};
+  }, [trafficLoad, retryPressure, indexFit, retrySafety, historyClarity, scalePlan, modelClarity, context.tables]);
 
-    return {readMs, duplicateChance, debugDifficulty, scalePain, overall, verdict, guidance};
-  }, [indexFit, modelClarity, retrySafety, history, trafficLoad, retryPressure, scalePlan]);
+  const formulas = formulaLines();
 
   return (
     <div className="case-playground">
       <h3>Interactive solution walkthrough</h3>
-
       <p>
         <strong>Case context:</strong> {context.domain}
         <br />
@@ -194,10 +155,6 @@ export default function CaseStudyPlayground({caseSlug}) {
         <strong>Read path:</strong> {context.readFlow}
         <br />
         <strong>Main risk:</strong> {context.biggestRisk}
-      </p>
-
-      <p>
-        1) Pick a preset from this case study. 2) Adjust choices as per your strategy. 3) See what changes.
       </p>
 
       <div className="solution-switcher">
@@ -211,77 +168,92 @@ export default function CaseStudyPlayground({caseSlug}) {
           </button>
         ))}
       </div>
-
       <p>
         <strong>Selected:</strong> {PRESETS[preset].label} — {PRESETS[preset].summary}
       </p>
 
       <div className="case-playground-grid">
         <section className="case-card">
-          <h4>Workload choices</h4>
-          <OptionGroup title="Traffic load" value={trafficLoad} onChange={setTrafficLoad} />
-          <OptionGroup title="Retry pressure" value={retryPressure} onChange={setRetryPressure} />
-
-          <h4>Design choices</h4>
-          <OptionGroup title="Query/index fit" value={indexFit} onChange={setIndexFit} />
-          <OptionGroup title="Retry-safe write handling" value={retrySafety} onChange={setRetrySafety} />
-          <OptionGroup title="History clarity" value={history} onChange={setHistory} />
-          <OptionGroup title="Scale plan" value={scalePlan} onChange={setScalePlan} />
-          <OptionGroup title="Table/relationship clarity" value={modelClarity} onChange={setModelClarity} />
-
+          <h4>Set percentages (how you model your strategy)</h4>
           <label>
-            Your own strategy notes (optional)
-            <textarea
-              rows="4"
-              placeholder="Example: We'll keep Good preset but use stronger retry-safe handling due to payment retries."
-              value={customStrategy}
-              onChange={e => setCustomStrategy(e.target.value)}
-            />
+            Traffic load: <strong>{trafficLoad}%</strong> ({pctLabel(trafficLoad)})
+            <input type="range" min="0" max="100" step="1" value={trafficLoad} onChange={e => setTrafficLoad(Number(e.target.value))} />
+          </label>
+          <label>
+            Retry pressure: <strong>{retryPressure}%</strong> ({pctLabel(retryPressure)})
+            <input type="range" min="0" max="100" step="1" value={retryPressure} onChange={e => setRetryPressure(Number(e.target.value))} />
+          </label>
+          <label>
+            Query/index fit: <strong>{indexFit}%</strong> ({pctLabel(indexFit)})
+            <input type="range" min="0" max="100" step="1" value={indexFit} onChange={e => setIndexFit(Number(e.target.value))} />
+          </label>
+          <label>
+            Retry-safe write handling: <strong>{retrySafety}%</strong> ({pctLabel(retrySafety)})
+            <input type="range" min="0" max="100" step="1" value={retrySafety} onChange={e => setRetrySafety(Number(e.target.value))} />
+          </label>
+          <label>
+            History clarity: <strong>{historyClarity}%</strong> ({pctLabel(historyClarity)})
+            <input type="range" min="0" max="100" step="1" value={historyClarity} onChange={e => setHistoryClarity(Number(e.target.value))} />
+          </label>
+          <label>
+            Scale plan quality: <strong>{scalePlan}%</strong> ({pctLabel(scalePlan)})
+            <input type="range" min="0" max="100" step="1" value={scalePlan} onChange={e => setScalePlan(Number(e.target.value))} />
+          </label>
+          <label>
+            Table/relationship clarity: <strong>{modelClarity}%</strong> ({pctLabel(modelClarity)})
+            <input type="range" min="0" max="100" step="1" value={modelClarity} onChange={e => setModelClarity(Number(e.target.value))} />
           </label>
         </section>
 
         <section className="case-card">
-          <h4>Outcome for your selected strategy</h4>
-          <div className="metrics">
-            <div>
-              <span>Read speed (p95)</span>
-              <strong>{result.readMs} ms</strong>
-            </div>
-            <div>
-              <span>Duplicate chance</span>
-              <strong>{result.duplicateChance}%</strong>
-            </div>
-            <div>
-              <span>Debug difficulty</span>
-              <strong>{result.debugDifficulty}%</strong>
-            </div>
-            <div>
-              <span>Scaling pain</span>
-              <strong>{result.scalePain}%</strong>
-            </div>
-            <div>
-              <span>Overall fit</span>
-              <strong>{result.overall}/100</strong>
-            </div>
-          </div>
-
-          <p>
-            <strong>Verdict:</strong> {result.verdict}
-          </p>
-
-          <h4>Connect-the-dots explanation</h4>
+          <h4>How to calculate these percentages</h4>
           <ul>
-            {result.guidance.map(item => (
-              <li key={item}>{item}</li>
-            ))}
+            <li><strong>Index fit %:</strong> (important read queries using correct index ÷ total important read queries) × 100.</li>
+            <li><strong>Retry-safe handling %:</strong> (write APIs protected by idempotency/unique constraints ÷ total write APIs) × 100.</li>
+            <li><strong>History clarity %:</strong> (critical state changes stored in append-only history ÷ total critical state changes) × 100.</li>
+            <li><strong>Scale plan %:</strong> estimate of readiness for growth (partitioning, async projections, backpressure, hotspot handling).</li>
+            <li><strong>Table/relationship clarity %:</strong> percentage of important relations with clear FK/ownership rules and non-ambiguous joins.</li>
           </ul>
 
-          {customStrategy.trim() ? (
-            <>
-              <h4>Your strategy</h4>
-              <blockquote>{customStrategy}</blockquote>
-            </>
-          ) : null}
+          <h4>Formula used in playground</h4>
+          <pre className="playground-formula">
+{`${formulas.readLatency}
+${formulas.duplicateRisk}
+${formulas.debugRisk}
+${formulas.scaleRisk}
+${formulas.overallFit}
+${formulas.tableLatency}`}
+          </pre>
+        </section>
+      </div>
+
+      <div className="case-playground-grid">
+        <section className="case-card">
+          <h4>System-level outcome</h4>
+          <div className="metrics">
+            <div><span>Read latency (base)</span><strong>{calc.baseReadMs} ms</strong></div>
+            <div><span>Duplicate risk</span><strong>{calc.duplicateRisk}%</strong></div>
+            <div><span>Debug risk</span><strong>{calc.debugRisk}%</strong></div>
+            <div><span>Scale risk</span><strong>{calc.scaleRisk}%</strong></div>
+            <div><span>Overall fit</span><strong>{calc.overallFit}/100</strong></div>
+          </div>
+          <p><strong>Verdict:</strong> {calc.verdict}</p>
+        </section>
+
+        <section className="case-card">
+          <h4>Table-level impact visual</h4>
+          <p>These bars show where user requests are likely to observe higher latency/risk first.</p>
+          {calc.tableStats.map(s => (
+            <div key={s.table} className="table-impact-row">
+              <div className="table-impact-header">
+                <strong>{s.table}</strong>
+                <span>{s.latency} ms · risk {s.risk}%</span>
+              </div>
+              <div className="table-impact-track">
+                <div className="table-impact-fill" style={{width: `${s.width}%`}} />
+              </div>
+            </div>
+          ))}
         </section>
       </div>
     </div>
