@@ -1,5 +1,5 @@
 :root {
-  /* LLDCoding-inspired indigo/violet branding */
+  /* Primary brand: indigo/violet + orange accent */
   --ifm-color-primary: #6d5efc;
   --ifm-color-primary-dark: #5d4dfa;
   --ifm-color-primary-darker: #5445fa;
@@ -8,78 +8,157 @@
   --ifm-color-primary-lighter: #8779fd;
   --ifm-color-primary-lightest: #a396fe;
 
-  --ifm-background-color: #0b1020;
+  --brand-orange: #ff8a3d;
+  --brand-orange-soft: #ffb178;
+  --brand-indigo: #6d5efc;
+
+  --ifm-background-color: #0a0f1d;
   --ifm-background-surface-color: #11182f;
-  --ifm-navbar-background-color: rgba(11, 16, 32, 0.92);
+  --ifm-navbar-background-color: rgba(10, 15, 29, 0.86);
   --ifm-navbar-link-color: #dbe3ff;
   --ifm-heading-color: #f6f8ff;
-  --ifm-font-color-base: #cfd7f6;
-  --ifm-link-color: #9d92ff;
-  --ifm-link-hover-color: #c4bcff;
-  --ifm-code-font-size: 95%;
-  --ifm-code-background: #171f3f;
+  --ifm-font-color-base: #ccd5f5;
+  --ifm-color-content-secondary: #aeb9e8;
 
-  --ifm-footer-background-color: #090d1b;
+  --ifm-link-color: #a79cff;
+  --ifm-link-hover-color: #cbc4ff;
+
+  --ifm-footer-background-color: #080c17;
   --ifm-footer-color: #b7c0ea;
   --ifm-footer-link-color: #ddd9ff;
   --ifm-footer-link-hover-color: #ffffff;
 
-  --ifm-color-emphasis-200: #212b52;
-  --ifm-color-emphasis-300: #2a3564;
+  --ifm-color-emphasis-200: #202a4e;
+  --ifm-color-emphasis-300: #293560;
   --ifm-toc-border-color: #24305e;
+
+  --ifm-code-font-size: 95%;
+  --ifm-code-background: #161d3a;
+  --ifm-pre-background: #0f1730;
 }
 
 html[data-theme='dark'] {
   --ifm-background-color: #080c19;
-  --ifm-background-surface-color: #11172b;
-  --ifm-navbar-background-color: rgba(8, 12, 25, 0.9);
-  --ifm-color-content-secondary: #b9c3ee;
+  --ifm-background-surface-color: #0f1529;
+  --ifm-navbar-background-color: rgba(8, 12, 25, 0.84);
 }
 
 body {
   background:
-    radial-gradient(circle at 15% 0%, rgba(109, 94, 252, 0.22), transparent 36%),
-    radial-gradient(circle at 85% 10%, rgba(91, 134, 255, 0.16), transparent 34%),
+    radial-gradient(circle at 8% 0%, rgba(109, 94, 252, 0.22), transparent 34%),
+    radial-gradient(circle at 88% 10%, rgba(255, 138, 61, 0.12), transparent 28%),
+    radial-gradient(circle at 75% 70%, rgba(80, 120, 255, 0.10), transparent 32%),
     var(--ifm-background-color);
+  text-rendering: optimizeLegibility;
 }
 
 .navbar {
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid #212c57;
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #202b55;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.28);
 }
 
 .navbar__title {
   letter-spacing: 0.2px;
   font-weight: 700;
+  background: linear-gradient(90deg, #e7e1ff 0%, #b9adff 58%, #ffb178 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.navbar__link:hover,
+.navbar__link--active {
+  color: var(--brand-orange-soft);
 }
 
 .hero--primary {
   background:
-    radial-gradient(circle at 10% 25%, rgba(116, 98, 255, 0.38), transparent 45%),
-    radial-gradient(circle at 85% 0%, rgba(63, 120, 255, 0.28), transparent 35%),
-    linear-gradient(135deg, #111832 0%, #0b1125 60%, #0a0f20 100%);
+    radial-gradient(circle at 14% 18%, rgba(123, 105, 255, 0.40), transparent 45%),
+    radial-gradient(circle at 88% 0%, rgba(255, 138, 61, 0.22), transparent 30%),
+    linear-gradient(135deg, #101734 0%, #0b1125 62%, #090e1d 100%);
   border-bottom: 1px solid #263468;
 }
 
-.button.button--secondary,
-.button.button--primary {
-  border-radius: 10px;
-  border: 1px solid rgba(141, 128, 255, 0.45);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+.hero--primary .hero__title {
+  text-shadow: 0 8px 30px rgba(86, 71, 250, 0.35);
 }
 
-.button.button--primary:hover,
+.hero--primary .hero__subtitle {
+  color: #c5cef3;
+}
+
+.button.button--primary {
+  border-radius: 10px;
+  background: linear-gradient(135deg, #7c6eff 0%, #5d4dfa 60%, #493af0 100%);
+  border: 1px solid rgba(161, 149, 255, 0.45);
+  box-shadow: 0 10px 22px rgba(67, 54, 210, 0.35);
+}
+
+.button.button--primary:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+.button.button--secondary {
+  border-radius: 10px;
+  background: rgba(17, 24, 47, 0.7);
+  border: 1px solid rgba(255, 138, 61, 0.38);
+  color: #ffd8bc;
+}
+
 .button.button--secondary:hover {
   transform: translateY(-1px);
-  transition: all 0.2s ease;
+  border-color: rgba(255, 138, 61, 0.7);
 }
 
 .theme-doc-sidebar-container {
   border-right: 1px solid #202b55 !important;
+  background: linear-gradient(180deg, rgba(14, 21, 41, 0.86), rgba(12, 18, 35, 0.65));
+}
+
+.menu__link {
+  border-radius: 8px;
 }
 
 .menu__link--active {
-  background: rgba(110, 98, 255, 0.16);
+  background: linear-gradient(90deg, rgba(110, 98, 255, 0.18), rgba(255, 138, 61, 0.10));
+  color: #efeaff;
+  border: 1px solid rgba(148, 134, 255, 0.35);
+}
+
+.table-of-contents {
+  border-left: 1px solid rgba(255, 138, 61, 0.25);
+}
+
+.markdown h1,
+.markdown h2,
+.markdown h3 {
+  letter-spacing: 0.2px;
+}
+
+.markdown h2 {
+  border-bottom: 1px solid rgba(255, 138, 61, 0.22);
+  padding-bottom: 0.35rem;
+}
+
+.markdown a {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.markdown blockquote {
+  border-left: 4px solid var(--brand-orange);
+  background: rgba(255, 138, 61, 0.06);
+}
+
+code {
+  border: 1px solid rgba(109, 94, 252, 0.35);
+}
+
+.prism-code {
+  border: 1px solid rgba(255, 138, 61, 0.26);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
 }
 
 .alert--info {
@@ -87,7 +166,20 @@ body {
   --ifm-alert-border-color: rgba(133, 148, 255, 0.45);
 }
 
+.alert--warning {
+  --ifm-alert-background-color: rgba(255, 138, 61, 0.12);
+  --ifm-alert-border-color: rgba(255, 138, 61, 0.48);
+}
+
 .pagination-nav__link {
   border: 1px solid #283668;
-  background: rgba(17, 24, 47, 0.72);
+  background: linear-gradient(180deg, rgba(17, 24, 47, 0.84), rgba(14, 20, 40, 0.72));
+}
+
+.footer {
+  border-top: 1px solid rgba(255, 138, 61, 0.2);
+}
+
+.announcementBar_node_modules-\@docusaurus-theme-classic-lib-theme-AnnouncementBar-styles-module {
+  border-bottom: 1px solid rgba(255, 138, 61, 0.4);
 }

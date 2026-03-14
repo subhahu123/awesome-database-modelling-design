@@ -37,11 +37,16 @@ const config = {
 
   themeConfig: {
     image: 'img/social-card.png',
+    colorMode: {
+      defaultMode: 'dark',
+      disableSwitch: false,
+      respectPrefersColorScheme: true,
+    },
     announcementBar: {
       id: 'branding-refresh',
-      content: '✨ New brand theme: LLDCoding-inspired visual refresh for DB Modelling Learn.',
-      backgroundColor: '#241f52',
-      textColor: '#f4f1ff',
+      content: '🟣🟠 Refreshed branding: LLDCoding-inspired Indigo + Orange for tech professionals.',
+      backgroundColor: '#1e1a42',
+      textColor: '#fff1e8',
       isCloseable: true,
     },
     navbar: {
