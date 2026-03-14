@@ -1,13 +1,13 @@
 ---
 id: blogs-overview
-title: Blogs overview
+title: Case studies overview
 slug: /path/blogs-overview
 ---
 
-# Blogs overview
+# Case studies overview
 
-The website blog now includes imported posts for all case study folders in this repository.
+All case studies are now organized under docs in `website/docs/case-studies/`.
 
-- Browse all posts at `/blog`
-- Each post links back to the original folder README path.
-- Tags: `case-study`, `database-modelling`
+- Browse complete catalog at `/case-studies`
+- Structured docs pages per case-study folder
+- Source links preserved in each page

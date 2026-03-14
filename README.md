@@ -181,7 +181,7 @@ The learning site now runs on **Docusaurus 2** under `website/`.
 - Config: `website/docusaurus.config.js`
 - Sidebar: `website/sidebars.js`
 - Learn docs: `website/docs/in-a-hurry/*`
-- Blog posts: `website/blog/*` (auto-imported from case-study READMEs)
+- Case study docs: `website/docs/case-studies/*` (imported from case-study READMEs)
 
 Run locally:
 
